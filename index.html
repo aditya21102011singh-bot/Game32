@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AGRI-OPS: Field Command — CBSE Class 10 Geography · Agriculture</title>
+<meta name="description" content="A futuristic FPS-lobby styled learning game for CBSE Class 10 Geography, Chapter: Agriculture.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<meta name="theme-color" content="#05070d">
+<!-- Optional CDN libraries for real PDF / Excel export (used only if the
+     browser has internet access when Export is clicked; falls back to
+     CSV / print automatically if offline — see README). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+</head>
+<body>
+
+<!-- ================= LOADER ================= -->
+<div id="loader">
+  <div class="hud-font" style="color:var(--blue);font-size:1.1rem;letter-spacing:.2em;">AGRI-OPS</div>
+  <div class="loader-bar"><div></div></div>
+  <div class="loader-text">CALIBRATING FIELD SYSTEMS...</div>
+</div>
+
+<!-- ================= AMBIENT BACKGROUND ================= -->
+<div id="bg-fx"></div>
+<div class="grid-overlay"></div>
+<div class="scanline"></div>
+<div class="noise"></div>
+<canvas id="confetti"></canvas>
+
+<!-- ================= TOPBAR ================= -->
+<div class="topbar">
+  <div class="brand"><span class="dot"></span> AGRI-OPS COMMAND</div>
+  <div class="scoreboard-mini" id="scoreboard-mini"></div>
+  <div class="controls">
+    <button class="iconbtn nav-home" title="Home">🏠</button>
+    <button class="iconbtn" id="daily-btn" title="Daily Challenge">📅</button>
+    <button class="iconbtn" id="leaderboard-btn" title="Leaderboard">🏆</button>
+    <button class="iconbtn" id="teacher-btn" title="Teacher / Admin">🔐</button>
+    <button class="iconbtn" id="settings-btn" title="Settings">⚙️</button>
+    <button class="iconbtn" id="contrast-btn" title="Toggle high contrast">🌓</button>
+    <button class="iconbtn" id="mute-btn" title="Mute/unmute"><span id="mute-icon">🔊</span></button>
+    <button class="iconbtn" id="fullscreen-btn" title="Fullscreen">⛶</button>
+  </div>
+</div>
+
+<div id="feedback-flash" class="feedback-flash"></div>
+
+<!-- ================= HOME ================= -->
+<section id="view-home" class="view active">
+  <div class="home-wrap">
+    <h1 id="site-title" class="title-edit" contenteditable="true" spellcheck="false" aria-label="Editable site title"></h1>
+    <p class="subtitle">CBSE Class 10 · Geography · Chapter: Agriculture — Tap the title to rename your mission</p>
+    <div class="home-actions">
+      <button class="btn primary" id="start-game-btn">▶ START GAME</button>
+      <button class="btn nav-modes">🎮 CHOOSE GAME</button>
+      <button class="btn nav-teams">👥 MANAGE TEAMS</button>
+    </div>
+    <p class="home-meta">255 briefing questions loaded · 15 mission types · Keyboard &amp; screen-reader friendly</p>
+  </div>
+</section>
+
+<!-- ================= MODE SELECT ================= -->
+<section id="view-modes" class="view">
+  <div class="center-max">
+    <div class="section-head">
+      <h2>Choose Your Mission</h2>
+      <span class="eyebrow">9 GAME MODES · AGRICULTURE CHAPTER ONLY</span>
+    </div>
+    <div class="mode-grid" id="mode-grid"></div>
+    <div class="btn-row" style="margin-top:2rem;">
+      <button class="btn ghost nav-home">← Back to Base</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRE-GAME ================= -->
+<section id="view-pregame" class="view">
+  <div class="center-max" style="max-width:560px;">
+    <div class="panel">
+      <h2 id="pregame-title" style="color:var(--orange);margin-bottom:1rem;">Mission Briefing</h2>
+      <div id="pregame-mount"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GAME ================= -->
+<section id="view-game" class="view">
+  <div class="center-max" id="game-mount"></div>
+</section>
+
+<!-- ================= TEAMS ================= -->
+<section id="view-teams" class="view">
+  <div class="center-max">
+    <div class="section-head">
+      <h2>Squad Management</h2>
+      <span class="eyebrow">UNLIMITED TEAMS · LIVE SCORES</span>
+    </div>
+    <div class="panel" style="margin-bottom:1.5rem;">
+      <div class="flex-between" style="gap:.75rem;">
+        <input class="field" id="new-team-name" type="text" placeholder="New team name (e.g. Group D)">
+        <button class="btn primary" id="add-team-btn">+ Add Team</button>
+      </div>
+    </div>
+    <div class="team-grid" id="team-grid"></div>
+    <div class="btn-row" style="margin-top:1.5rem;">
+      <button class="btn danger" id="reset-scores-btn">↺ Reset All Scores</button>
+      <button class="btn ghost nav-home">← Back to Base</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LEADERBOARD ================= -->
+<section id="view-leaderboard" class="view">
+  <div class="center-max" style="max-width:640px;">
+    <div class="section-head"><h2>Mission Leaderboard</h2></div>
+    <div id="leaderboard-list"></div>
+    <button class="btn ghost nav-home" style="margin-top:1rem;">← Back to Base</button>
+  </div>
+</section>
+
+<!-- ================= TEACHER / ADMIN ================= -->
+<section id="view-teacher" class="view">
+  <div class="center-max" style="max-width:720px;">
+    <div class="section-head"><h2>Teacher &amp; Admin Panel</h2><span class="eyebrow">PASSWORD PROTECTED</span></div>
+
+    <div class="panel" id="teacher-login">
+      <p style="margin-bottom:1rem;color:var(--muted)">Enter the teacher password to manage questions, teams, and export results.</p>
+      <div class="flex-between" style="gap:.75rem;">
+        <input class="field" id="teacher-pass" type="password" placeholder="Password">
+        <button class="btn primary" id="teacher-login-btn">Unlock</button>
+      </div>
+      <p style="margin-top:.75rem;font-size:.75rem;color:var(--muted)">Default password: <code>teacher123</code> — change it in <code>js/app.js</code> (TEACHER_PASSWORD) before classroom use.</p>
+    </div>
+
+    <div id="teacher-panel" class="hidden">
+      <div class="panel" style="margin-bottom:1.5rem;">
+        <h3 style="color:var(--blue);margin-bottom:1rem;">Add MCQ Question</h3>
+        <div style="display:flex;flex-direction:column;gap:.6rem;">
+          <input class="field" id="tq-question" placeholder="Question text">
+          <input class="field" id="tq-opt0" placeholder="Option A">
+          <input class="field" id="tq-opt1" placeholder="Option B">
+          <input class="field" id="tq-opt2" placeholder="Option C">
+          <input class="field" id="tq-opt3" placeholder="Option D">
+          <select class="field" id="tq-correct">
+            <option value="0">Correct answer: Option A</option>
+            <option value="1">Correct answer: Option B</option>
+            <option value="2">Correct answer: Option C</option>
+            <option value="3">Correct answer: Option D</option>
+          </select>
+          <div class="flex-between" style="gap:.6rem;">
+            <select class="field" id="tq-difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            <input class="field" id="tq-category" placeholder="Category (e.g. Rice, Green Revolution)">
+          </div>
+          <label style="font-size:.8rem;color:var(--muted)">Optional image (shown above the question in Multiple Choice Quiz, Rapid Fire, Group Battle, Spin the Wheel, Harvest Hunt, Survival and Boss Round)</label>
+          <input class="field" id="tq-image" type="file" accept="image/*">
+          <button class="btn primary" id="add-question-btn">+ Add to Bank</button>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:1.5rem;">
+        <h3 style="color:var(--blue);margin-bottom:1rem;">Custom Questions</h3>
+        <div id="teacher-question-list"></div>
+      </div>
+
+      <div class="panel">
+        <h3 style="color:var(--blue);margin-bottom:1rem;">Class Tools</h3>
+        <div class="btn-row">
+          <button class="btn orange" id="export-csv-btn">⬇ CSV</button>
+          <button class="btn orange" id="export-pdf-btn">🖨 PDF</button>
+          <button class="btn orange" id="export-xlsx-btn">📊 Excel (.xlsx)</button>
+          <button class="btn danger" id="teacher-reset-btn">↺ Reset All Scores</button>
+        </div>
+        <p style="font-size:.75rem;color:var(--muted);margin-top:.6rem;">PDF/Excel need one moment of internet access to fetch their generator library the first time; if the browser is fully offline they fall back to CSV / print automatically.</p>
+      </div>
+    </div>
+
+    <button class="btn ghost nav-home" style="margin-top:1.5rem;">← Back to Base</button>
+  </div>
+</section>
+
+<!-- ================= SETTINGS ================= -->
+<section id="view-settings" class="view">
+  <div class="center-max" style="max-width:640px;">
+    <div class="section-head"><h2>Settings</h2><span class="eyebrow">SAVED LOCALLY ON THIS DEVICE</span></div>
+
+    <div class="panel" style="margin-bottom:1.25rem;">
+      <h3 style="color:var(--blue);margin-bottom:1rem;">Audio</h3>
+      <label>Music volume</label>
+      <input type="range" min="0" max="100" id="set-music-vol" style="width:100%;margin:.4rem 0 1rem;">
+      <label>Sound effects volume</label>
+      <input type="range" min="0" max="100" id="set-sfx-vol" style="width:100%;margin:.4rem 0 1rem;">
+      <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" id="set-music-toggle"> Background music enabled</label>
+    </div>
+
+    <div class="panel" style="margin-bottom:1.25rem;">
+      <h3 style="color:var(--blue);margin-bottom:1rem;">Display</h3>
+      <label>Theme</label>
+      <select class="field" id="set-theme" style="margin:.4rem 0 1rem;">
+        <option value="dark">Dark (futuristic HUD)</option>
+        <option value="light">Light</option>
+      </select>
+      <label>Animations</label>
+      <select class="field" id="set-animations" style="margin:.4rem 0;">
+        <option value="on">On</option>
+        <option value="off">Reduced / Off</option>
+      </select>
+    </div>
+
+    <div class="panel" style="margin-bottom:1.25rem;">
+      <h3 style="color:var(--blue);margin-bottom:1rem;">Gameplay</h3>
+      <label>Difficulty filter (applies to solo quiz modes)</label>
+      <select class="field" id="set-difficulty" style="margin:.4rem 0 1rem;">
+        <option value="all">All difficulties</option>
+        <option value="easy">Easy only</option>
+        <option value="medium">Medium only</option>
+        <option value="hard">Hard only</option>
+      </select>
+      <label>Default question count (MCQ / True-False / Fill-Blank modes)</label>
+      <input class="field" type="number" min="3" max="30" id="set-qcount" style="margin:.4rem 0 1rem;">
+      <label>Rapid Fire duration (seconds)</label>
+      <input class="field" type="number" min="30" id="set-rapid-secs" style="margin:.4rem 0 1rem;">
+      <label>Group Battle shot clock (seconds)</label>
+      <input class="field" type="number" min="5" id="set-battle-secs" style="margin:.4rem 0 1rem;">
+      <label>Group Battle rounds per team</label>
+      <input class="field" type="number" min="1" id="set-rounds" style="margin:.4rem 0 1rem;">
+      <label>Timed-quiz per-question seconds (Farming Championship, etc.)</label>
+      <input class="field" type="number" min="5" id="set-quiz-secs" style="margin:.4rem 0;">
+    </div>
+    <button class="btn ghost nav-home">← Back to Base</button>
+  </div>
+</section>
+
+<!-- ================= MYSTERY BOX MODAL ================= -->
+<div class="modal-backdrop" id="mystery-backdrop">
+  <div class="panel modal-box">
+    <div id="mystery-box-content"></div>
+    <div class="btn-row"><button class="btn ghost sm" id="mystery-close-btn">Skip</button></div>
+  </div>
+</div>
+
+<!-- ================= END / WINNER ================= -->
+<section id="view-end" class="view">
+  <div class="home-wrap">
+    <div class="trophy">🏆</div>
+    <div class="winner-name" id="winner-name">WINNER</div>
+    <p style="color:var(--muted)">Congratulations, Commander. Mission complete.</p>
+    <div class="final-board" id="final-board"></div>
+    <div class="home-actions">
+      <button class="btn primary" id="play-again-btn">↺ Play Again</button>
+      <button class="btn ghost" id="end-return-home-btn">🏠 Return Home</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TOAST ================= -->
+<div class="toast" id="toast"></div>
+
+<script src="js/questions.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
