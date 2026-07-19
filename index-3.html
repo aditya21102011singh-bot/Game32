@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AGRI-OPS: Field Command — CBSE Class 10 Geography · Agriculture</title>
+<meta name="description" content="A futuristic FPS-lobby styled learning game for CBSE Class 10 Geography, Chapter: Agriculture.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   AGRI-OPS :: FIELD COMMAND — stylesheet
+   Design tokens
+   Color   : --bg #05070d | --panel rgba(13,18,28,.72) | --blue #00e5ff
+             --green #39ff88 | --orange #ff8a1e | --danger #ff2d55
+             --ink #e7f1ff | --muted #7c8aa3
+   Type    : Orbitron (display/HUD) / Rajdhani (UI+body) / Share Tech Mono (numerals)
+   Signature: angled "mission panel" frames with animated corner brackets + scanline
+   ========================================================================= */
+
+:root{
+  --bg:#05070d;
+  --bg2:#0a0f1a;
+  --panel:rgba(13,18,28,.72);
+  --panel-solid:#0d121c;
+  --blue:#00e5ff;
+  --blue-dim:#0891a8;
+  --green:#39ff88;
+  --orange:#ff8a1e;
+  --danger:#ff2d55;
+  --ink:#e7f1ff;
+  --muted:#7c8aa3;
+  --border:rgba(0,229,255,.28);
+  --radius:2px;
+  --font-display:'Orbitron',sans-serif;
+  --font-body:'Rajdhani',sans-serif;
+  --font-mono:'Share Tech Mono',monospace;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;-webkit-text-size-adjust:100%;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-weight:500;
+  letter-spacing:.02em;
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+
+/* ---------- Ambient background ---------- */
+#bg-fx{
+  position:fixed;inset:0;z-index:-2;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,229,255,.14), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(57,255,136,.10), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 0% 100%, rgba(255,138,30,.08), transparent 60%),
+    linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+}
+.grid-overlay{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,229,255,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,.045) 1px, transparent 1px);
+  background-size:42px 42px;
+  mask-image:radial-gradient(ellipse 90% 90% at 50% 30%, #000 40%, transparent 100%);
+  animation:gridDrift 40s linear infinite;
+}
+@keyframes gridDrift{0%{background-position:0 0,0 0;}100%{background-position:80px 120px,80px 120px;}}
+.scanline{
+  position:fixed;left:0;right:0;height:2px;z-index:40;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.5),transparent);
+  animation:scanMove 6s linear infinite;
+  opacity:.5;
+}
+@keyframes scanMove{0%{top:-2%;}100%{top:102%;}}
+.noise{position:fixed;inset:0;z-index:39;pointer-events:none;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* =========================================================================
+   MODE THEMING — per-mission background layer
+   #mode-fx sits just above #bg-fx and fades in only while a mode is active
+   (body[data-theme="..."]). Kept CSS-only (no per-frame JS) for performance.
+   ========================================================================= */
+#mode-fx{
+  position:fixed;inset:-6%;z-index:-2;pointer-events:none;
+  opacity:0;transition:opacity .7s ease;
+  background-repeat:no-repeat;
+}
+#mode-fx::before,#mode-fx::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+}
+body[data-theme] #mode-fx{opacity:1;}
+
+/* ---- Rapid Fire: high-tech mission room ---- */
+body[data-theme="rapid"] #mode-fx{
+  background:
+    repeating-linear-gradient(115deg,rgba(0,229,255,.05) 0 2px,transparent 2px 34px),
+    radial-gradient(ellipse 60% 40% at 15% 10%,rgba(0,229,255,.20),transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 90%,rgba(255,45,85,.12),transparent 60%),
+    var(--bg);
+}
+body[data-theme="rapid"] #mode-fx::before{
+  opacity:1;background:linear-gradient(180deg,transparent 0%,rgba(0,229,255,.18) 50%,transparent 100%);
+  height:140%;width:2px;left:12%;animation:rapidSweep 5s linear infinite;
+}
+body[data-theme="rapid"] #mode-fx::after{
+  opacity:1;background:radial-gradient(circle,rgba(255,45,85,.55) 0%,transparent 70%);
+  width:10px;height:10px;top:6%;right:8%;border-radius:50%;
+  animation:rapidBeacon 1.6s ease-in-out infinite;
+}
+@keyframes rapidSweep{0%{transform:translateX(0) translateY(-10%);}100%{transform:translateX(70vw) translateY(-10%);}}
+@keyframes rapidBeacon{0%,100%{opacity:.25;transform:scale(1);}50%{opacity:1;transform:scale(1.8);}}
+
+/* ---- Group Battle: stadium arena ---- */
+body[data-theme="battle"] #mode-fx{
+  background:
+    radial-gradient(ellipse 40% 60% at 20% -10%,rgba(255,224,102,.18),transparent 60%),
+    radial-gradient(ellipse 40% 60% at 80% -10%,rgba(199,125,255,.18),transparent 60%),
+    repeating-radial-gradient(ellipse 120% 60% at 50% 120%,rgba(255,255,255,.03) 0 3px,transparent 3px 9px),
+    var(--bg);
+}
+body[data-theme="battle"] #mode-fx::before{
+  opacity:1;background:conic-gradient(from 200deg at 20% -10%,rgba(255,224,102,.22),transparent 25%);
+  animation:battleSpot 7s ease-in-out infinite alternate;
+}
+body[data-theme="battle"] #mode-fx::after{
+  opacity:1;background:conic-gradient(from 340deg at 80% -10%,rgba(199,125,255,.22),transparent 25%);
+  animation:battleSpot 7s ease-in-out infinite alternate-reverse;
+}
+@keyframes battleSpot{0%{opacity:.5;}100%{opacity:1;}}
+
+/* ---- Match the Following: interactive classroom ---- */
+body[data-theme="match"] #mode-fx{
+  background:
+    repeating-linear-gradient(180deg,transparent 0 38px,rgba(57,255,136,.05) 38px 40px),
+    radial-gradient(ellipse 70% 50% at 50% 0%,rgba(57,255,136,.14),transparent 65%),
+    var(--bg);
+}
+body[data-theme="match"] #mode-fx::before{
+  opacity:.7;background:radial-gradient(circle,rgba(255,255,255,.5) 0 2px,transparent 3px) 0 0/60px 60px;
+  animation:chalkDust 14s linear infinite;
+}
+@keyframes chalkDust{0%{background-position:0 0;}100%{background-position:0 -600px;}}
+
+/* ---- Map Challenge: animated India map / topographic ---- */
+body[data-theme="mapchallenge"] #mode-fx{
+  background:
+    repeating-radial-gradient(circle at 50% 40%,transparent 0 40px,rgba(57,255,136,.05) 40px 42px),
+    radial-gradient(ellipse 60% 50% at 50% 20%,rgba(0,229,255,.14),transparent 65%),
+    var(--bg);
+}
+body[data-theme="mapchallenge"] #mode-fx::before{
+  opacity:1;background:radial-gradient(circle,rgba(57,255,136,.7) 0%,transparent 70%);
+  width:14px;height:14px;border-radius:50%;top:38%;left:46%;
+  animation:mapPulse 2.4s ease-out infinite;
+}
+@keyframes mapPulse{0%{transform:scale(1);opacity:.8;}100%{transform:scale(6);opacity:0;}}
+
+/* ---- Harvest Hunt: harvest-festival theme ---- */
+body[data-theme="harvest"] #mode-fx{
+  background:
+    radial-gradient(ellipse 60% 40% at 50% -10%,rgba(255,138,30,.22),transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 100%,rgba(255,224,102,.14),transparent 60%),
+    var(--bg);
+}
+body[data-theme="harvest"] #mode-fx::before{
+  opacity:.9;background:radial-gradient(circle,rgba(255,224,102,.9) 0 2px,transparent 3px) 10px 10px/70px 40px;
+  animation:festLights 3s ease-in-out infinite;
+}
+@keyframes festLights{0%,100%{opacity:.5;}50%{opacity:1;}}
+
+/* ---- Final Boss Round: golden championship arena ---- */
+body[data-theme="boss"] #mode-fx{
+  background:
+    radial-gradient(ellipse 55% 55% at 50% 40%,rgba(255,224,102,.22),transparent 65%),
+    radial-gradient(ellipse 90% 60% at 50% 120%,rgba(255,138,30,.12),transparent 60%),
+    #030402;
+}
+body[data-theme="boss"] #mode-fx::before{
+  opacity:1;background:conic-gradient(from 0deg at 50% 40%,transparent 0deg,rgba(255,224,102,.28) 8deg,transparent 16deg);
+  animation:bossSweep 4s linear infinite;
+}
+body[data-theme="boss"] #mode-fx::after{
+  opacity:1;background:radial-gradient(circle,rgba(255,224,102,.9) 0%,transparent 70%);
+  width:8px;height:8px;border-radius:50%;top:20%;left:50%;
+  animation:rapidBeacon 1.2s ease-in-out infinite;
+}
+@keyframes bossSweep{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+
+/* ---- Lighter tints for the remaining mission types (shared pattern, unique hue) ---- */
+body[data-theme="tf"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(94,231,255,.16),transparent 60%),var(--bg);}
+body[data-theme="crop"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(57,255,136,.16),transparent 60%),var(--bg);}
+body[data-theme="image"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(255,138,30,.16),transparent 60%),var(--bg);}
+body[data-theme="fill"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(0,229,255,.16),transparent 60%),var(--bg);}
+body[data-theme="mcq"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(199,125,255,.16),transparent 60%),var(--bg);}
+body[data-theme="detective"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(255,45,85,.14),transparent 60%),var(--bg);}
+body[data-theme="mega"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(255,224,102,.18),transparent 60%),var(--bg);}
+body[data-theme="wheel"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(199,125,255,.16),transparent 60%),var(--bg);}
+body[data-theme="survival"] #mode-fx{background:radial-gradient(ellipse 65% 45% at 50% 0%,rgba(255,45,85,.18),transparent 60%),var(--bg);}
+
+@media (prefers-reduced-motion:reduce){
+  #mode-fx,#mode-fx::before,#mode-fx::after{animation:none !important;transition:none !important;}
+}
+
+/* ---------- Typography ---------- */
+.hud-font{font-family:var(--font-display);letter-spacing:.06em;}
+.mono{font-family:var(--font-mono);}
+h1,h2,h3{font-family:var(--font-display);letter-spacing:.04em;text-transform:uppercase;}
+
+/* ---------- Corner-bracket mission panel (signature element) ---------- */
+.panel{
+  position:relative;
+  background:var(--panel);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--border);
+  clip-path:polygon(0 14px,14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%);
+  padding:1.5rem;
+}
+.panel::before,.panel::after{
+  content:"";position:absolute;width:18px;height:18px;pointer-events:none;
+  border-color:var(--blue);border-style:solid;border-width:0;
+}
+.panel::before{top:-1px;left:-1px;border-top-width:2px;border-left-width:2px;}
+.panel::after{bottom:-1px;right:-1px;border-bottom-width:2px;border-right-width:2px;}
+
+/* ---------- Buttons ---------- */
+.btn{
+  font-family:var(--font-display);
+  font-size:.85rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink);
+  background:linear-gradient(180deg,rgba(0,229,255,.14),rgba(0,229,255,.04));
+  border:1px solid var(--blue);
+  padding:.85rem 1.6rem;
+  cursor:pointer;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  position:relative;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:hover,.btn:focus-visible{
+  background:linear-gradient(180deg,rgba(0,229,255,.3),rgba(0,229,255,.08));
+  box-shadow:0 0 18px rgba(0,229,255,.45),0 0 2px rgba(0,229,255,.8) inset;
+  transform:translateY(-2px);
+  outline:none;
+}
+.btn:active{transform:translateY(0) scale(.98);}
+.btn.primary{border-color:var(--green);color:var(--green);
+  background:linear-gradient(180deg,rgba(57,255,136,.16),rgba(57,255,136,.04));}
+.btn.primary:hover{box-shadow:0 0 20px rgba(57,255,136,.5);background:linear-gradient(180deg,rgba(57,255,136,.32),rgba(57,255,136,.08));}
+.btn.orange{border-color:var(--orange);color:var(--orange);
+  background:linear-gradient(180deg,rgba(255,138,30,.16),rgba(255,138,30,.04));}
+.btn.orange:hover{box-shadow:0 0 20px rgba(255,138,30,.5);}
+.btn.danger{border-color:var(--danger);color:var(--danger);
+  background:linear-gradient(180deg,rgba(255,45,85,.16),rgba(255,45,85,.04));}
+.btn.danger:hover{box-shadow:0 0 20px rgba(255,45,85,.5);}
+.btn.ghost{background:transparent;border-color:var(--muted);color:var(--muted);}
+.btn.ghost:hover{border-color:var(--ink);color:var(--ink);box-shadow:none;}
+.btn.sm{padding:.5rem .9rem;font-size:.7rem;}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+.btn-row{display:flex;gap:.75rem;flex-wrap:wrap;}
+
+/* ---------- Layout scaffolding ---------- */
+.view{display:none;min-height:100vh;padding:6.5rem clamp(1rem,4vw,3rem) 2rem;}
+.view.active{display:block;animation:viewIn .45s ease both;}
+@keyframes viewIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:30;
+  display:flex;align-items:center;flex-wrap:wrap;
+  row-gap:.4rem;column-gap:.75rem;
+  padding:.7rem clamp(1rem,3vw,2rem);
+  background:linear-gradient(180deg,rgba(5,7,13,.92),rgba(5,7,13,0));
+  pointer-events:none;
+}
+.topbar > *{pointer-events:auto;}
+.topbar .brand{font-family:var(--font-display);font-size:1rem;color:var(--blue);letter-spacing:.12em;display:flex;align-items:center;gap:.5rem;margin-right:auto;}
+.topbar .brand .dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);animation:pulse 1.6s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.topbar .controls{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:flex-end;}
+.iconbtn{
+  width:38px;height:38px;flex:none;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);background:var(--panel);color:var(--ink);
+  cursor:pointer;font-size:1rem;border-radius:50%;transition:all .2s;
+}
+.iconbtn:hover{border-color:var(--blue);box-shadow:0 0 12px rgba(0,229,255,.4);}
+
+/* scoreboard-mini lives inside .topbar's normal flex flow (between brand and
+   controls) — it must NOT be position:fixed, or it pins to the same corner
+   as .controls and overlaps the icon buttons whenever team scores are shown. */
+.scoreboard-mini{
+  display:none;flex-wrap:wrap;gap:.5rem;justify-content:flex-end;
+}
+.scoreboard-mini.show{display:flex;}
+.score-chip{
+  font-family:var(--font-mono);font-size:.78rem;padding:.35rem .7rem;
+  background:var(--panel);border:1px solid var(--border);border-radius:20px;
+  white-space:nowrap;
+}
+.score-chip b{color:var(--green);}
+
+/* ---------- HOME ---------- */
+#view-home{display:flex;align-items:center;justify-content:center;padding-top:4rem;}
+.home-wrap{max-width:900px;width:100%;text-align:center;}
+.title-edit{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-family:var(--font-display);
+  font-size:clamp(2rem,7vw,4.2rem);
+  line-height:1.1;
+  color:var(--ink);
+  text-shadow:0 0 24px rgba(0,229,255,.5),0 0 60px rgba(57,255,136,.15);
+  background:transparent;border:none;text-align:center;
+  border-bottom:2px dashed transparent;
+  max-width:100%;
+}
+.title-edit:hover,.title-edit:focus{border-bottom-color:var(--blue);outline:none;}
+.title-edit span.g{color:var(--green);}
+.title-edit span.o{color:var(--orange);}
+.subtitle{color:var(--muted);font-size:clamp(.85rem,2vw,1.05rem);margin-top:.75rem;letter-spacing:.1em;text-transform:uppercase;}
+.home-actions{display:flex;justify-content:center;gap:1rem;margin-top:2.5rem;flex-wrap:wrap;}
+.home-actions .btn{padding:1rem 2.2rem;font-size:1rem;}
+.home-meta{margin-top:2.5rem;color:var(--muted);font-size:.78rem;font-family:var(--font-mono);}
+
+/* ---------- Mode grid ---------- */
+.section-head{display:flex;align-items:baseline;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+.section-head h2{font-size:clamp(1.3rem,3vw,1.9rem);color:var(--blue);}
+.section-head .eyebrow{font-family:var(--font-mono);color:var(--muted);font-size:.75rem;letter-spacing:.15em;}
+.mode-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;}
+.mode-card{
+  cursor:pointer;padding:1.25rem;display:flex;flex-direction:column;gap:.6rem;min-height:170px;
+  transition:transform .2s ease;
+}
+.mode-card:hover{transform:translateY(-4px);}
+.mode-card .icon{font-size:1.8rem;}
+.mode-card h3{font-size:1rem;color:var(--ink);}
+.mode-card p{font-size:.82rem;color:var(--muted);line-height:1.4;flex:1;}
+.mode-card .tag{align-self:flex-start;font-family:var(--font-mono);font-size:.65rem;padding:.2rem .55rem;border:1px solid var(--border);color:var(--blue);border-radius:2px;}
+
+/* ---------- Teams ---------- */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-top:1rem;}
+.team-card{padding:1rem;display:flex;flex-direction:column;gap:.5rem;}
+.team-card .name{font-family:var(--font-display);font-size:1rem;}
+.team-card .pts{font-family:var(--font-mono);font-size:1.6rem;color:var(--green);}
+.team-card .row{display:flex;gap:.4rem;}
+.team-colorbar{height:4px;width:100%;border-radius:2px;}
+.field{
+  background:var(--bg2);border:1px solid var(--border);color:var(--ink);
+  padding:.6rem .8rem;font-family:var(--font-body);font-size:.95rem;width:100%;border-radius:2px;
+}
+.field:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,229,255,.2);}
+
+/* ---------- Game HUD ---------- */
+.game-hud{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem;}
+.timer-display{
+  font-family:var(--font-mono);font-size:clamp(2rem,6vw,3.4rem);color:var(--blue);
+  text-shadow:0 0 20px rgba(0,229,255,.6);
+}
+.timer-display.warn{color:var(--danger);text-shadow:0 0 24px rgba(255,45,85,.8);animation:timerShake .4s infinite;}
+@keyframes timerShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-2px);}75%{transform:translateX(2px);}}
+.progressbar{height:8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-top:.4rem;}
+.progressbar > div{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .3s linear;}
+
+.qcard{padding:2rem;text-align:center;}
+.qcard .qmeta{display:flex;justify-content:center;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap;}
+.pill{font-family:var(--font-mono);font-size:.68rem;padding:.25rem .6rem;border:1px solid var(--border);border-radius:12px;color:var(--muted);text-transform:uppercase;}
+.pill.easy{color:var(--green);border-color:var(--green);}
+.pill.medium{color:var(--orange);border-color:var(--orange);}
+.pill.hard{color:var(--danger);border-color:var(--danger);}
+.qtext{font-size:clamp(1.1rem,2.6vw,1.6rem);line-height:1.4;margin-bottom:1.6rem;}
+.options-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.9rem;}
+.opt-btn{
+  padding:1rem 1.2rem;text-align:left;font-family:var(--font-body);font-size:1rem;font-weight:600;
+  background:var(--panel);border:1px solid var(--border);color:var(--ink);cursor:pointer;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+  transition:all .15s;
+}
+.opt-btn:hover{border-color:var(--blue);box-shadow:0 0 14px rgba(0,229,255,.3);}
+.opt-btn.correct{border-color:var(--green);background:rgba(57,255,136,.18);box-shadow:0 0 20px rgba(57,255,136,.5);animation:pop .3s ease;}
+.opt-btn.wrong{border-color:var(--danger);background:rgba(255,45,85,.18);box-shadow:0 0 20px rgba(255,45,85,.5);animation:shakeX .35s ease;}
+.opt-btn:disabled{cursor:default;}
+@keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.04);}100%{transform:scale(1);}}
+@keyframes shakeX{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+
+.feedback-flash{position:fixed;inset:0;pointer-events:none;z-index:25;opacity:0;}
+.feedback-flash.correct{background:radial-gradient(circle,rgba(57,255,136,.18),transparent 70%);animation:flash .5s ease;}
+.feedback-flash.wrong{background:radial-gradient(circle,rgba(255,45,85,.2),transparent 70%);animation:flash .5s ease;}
+@keyframes flash{0%{opacity:1;}100%{opacity:0;}}
+
+/* True/False */
+.tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;max-width:520px;margin:0 auto;}
+.tf-btn{padding:1.6rem;font-family:var(--font-display);font-size:1.3rem;}
+.tf-btn.true{border-color:var(--green);color:var(--green);}
+.tf-btn.false{border-color:var(--danger);color:var(--danger);}
+
+/* Fill in the blank */
+.fill-wrap{max-width:520px;margin:0 auto;display:flex;gap:.6rem;}
+.fill-wrap .field{flex:1;text-align:center;font-family:var(--font-mono);font-size:1.1rem;}
+
+/* Match the following */
+.match-wrap{display:grid;grid-template-columns:1fr 1fr;gap:2rem;max-width:760px;margin:0 auto;}
+.match-col h4{text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:.75rem;letter-spacing:.15em;margin-bottom:.75rem;text-transform:uppercase;}
+.match-item{
+  padding:.8rem 1rem;margin-bottom:.6rem;background:var(--panel);border:1px solid var(--border);
+  cursor:pointer;font-size:.95rem;transition:all .15s;
+}
+.match-item.selected{border-color:var(--blue);box-shadow:0 0 12px rgba(0,229,255,.4);}
+.match-item.matched{border-color:var(--green);color:var(--green);opacity:.55;cursor:default;}
+.match-item.wrong-flash{border-color:var(--danger);animation:shakeX .35s ease;}
+@media (max-width:640px){.match-wrap{grid-template-columns:1fr;gap:1rem;}}
+
+/* Crop ID */
+.crop-display{font-size:clamp(5rem,18vw,9rem);text-align:center;margin:1rem 0;filter:drop-shadow(0 0 24px rgba(0,229,255,.35));}
+.crop-clue{text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:1.5rem;font-style:italic;}
+
+/* Group battle turn indicator */
+.turn-banner{
+  text-align:center;padding:.6rem;margin-bottom:1rem;font-family:var(--font-display);
+  letter-spacing:.1em;color:var(--orange);border:1px solid var(--orange);
+  background:rgba(255,138,30,.08);
+}
+
+/* ---------- End / Winner screen ---------- */
+#view-end{display:none;align-items:center;justify-content:center;min-height:100vh;text-align:center;position:relative;overflow:hidden;}
+#view-end.active{display:flex;}
+.trophy{font-size:clamp(4rem,14vw,7rem);animation:trophyBounce 1.2s ease infinite;filter:drop-shadow(0 0 30px rgba(255,214,0,.6));}
+@keyframes trophyBounce{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-14px) scale(1.05);}}
+.winner-name{font-family:var(--font-display);font-size:clamp(1.6rem,5vw,3rem);color:var(--green);text-shadow:0 0 24px rgba(57,255,136,.6);margin:.5rem 0;}
+.final-board{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin:2rem 0;}
+canvas#confetti{position:fixed;inset:0;z-index:50;pointer-events:none;}
+
+/* ---------- Toast / modal ---------- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:60;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-backdrop.show{display:flex;}
+.modal-box{max-width:480px;width:100%;padding:2rem;}
+.modal-box h3{color:var(--blue);margin-bottom:1rem;}
+.modal-box .btn-row{margin-top:1.5rem;justify-content:flex-end;}
+
+.toast{
+  position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(100px);
+  padding:.8rem 1.4rem;background:var(--panel-solid);border:1px solid var(--border);
+  color:var(--ink);font-size:.9rem;z-index:70;transition:transform .3s ease;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ---------- Loader ---------- */
+#loader{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;transition:opacity .5s ease;}
+.loader-bar{width:min(320px,70vw);height:3px;background:var(--bg2);border:1px solid var(--border);overflow:hidden;}
+.loader-bar > div{height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--green));animation:loadFill 1.6s ease forwards;}
+@keyframes loadFill{to{width:100%;}}
+.loader-text{font-family:var(--font-mono);color:var(--muted);font-size:.8rem;letter-spacing:.15em;}
+
+/* ---------- Utility ---------- */
+.center-max{max-width:1100px;margin:0 auto;}
+.grow{flex:1;}
+.hidden{display:none!important;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;}
+::selection{background:var(--blue);color:#001a1f;}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--blue-dim);border-radius:4px;}
+
+/* High contrast toggle */
+body.high-contrast{--ink:#ffffff;--muted:#cfd8e6;--panel:rgba(0,0,0,.85);--border:#00e5ff;}
+
+/* Light mode toggle (Settings > Display) */
+body.light-mode{
+  --bg:#eef3fa; --bg2:#e2eaf6; --ink:#101826; --muted:#4a5875;
+  --panel:rgba(255,255,255,.72); --panel-solid:#ffffff; --border:rgba(0,120,150,.35);
+}
+body.light-mode #bg-fx{
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,150,190,.10), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(30,180,110,.08), transparent 60%),
+    linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+}
+body.light-mode .noise{opacity:.02;}
+body.light-mode .btn{color:var(--ink);}
+
+/* Animations-off toggle (Settings > Display) */
+body.no-anim *, body.no-anim *::before, body.no-anim *::after{
+  animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;}
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width:760px){
+  .home-actions{flex-direction:column;align-items:stretch;}
+  .home-actions .btn{width:100%;}
+  .options-grid{grid-template-columns:1fr;}
+  .tf-grid{grid-template-columns:1fr;}
+}
+@media (max-width:420px){
+  .iconbtn{width:34px;height:34px;font-size:.9rem;}
+  .topbar .brand{font-size:.85rem;}
+}
+
+</style>
+<meta name="theme-color" content="#05070d">
+<!-- Optional CDN libraries for real PDF / Excel export (used only if the
+     browser has internet access when Export is clicked; falls back to
+     CSV / print automatically if offline — see README). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+</head>
+<body>
+
+<!-- ================= LOADER ================= -->
+<div id="loader">
+  <div class="hud-font" style="color:var(--blue);font-size:1.1rem;letter-spacing:.2em;">AGRI-OPS</div>
+  <div class="loader-bar"><div></div></div>
+  <div class="loader-text">CALIBRATING FIELD SYSTEMS...</div>
+</div>
+
+<!-- ================= AMBIENT BACKGROUND ================= -->
+<div id="bg-fx"></div>
+<div id="mode-fx"></div>
+<div class="grid-overlay"></div>
+<div class="scanline"></div>
+<div class="noise"></div>
+<canvas id="confetti"></canvas>
+
+<!-- ================= TOPBAR ================= -->
+<div class="topbar">
+  <div class="brand"><span class="dot"></span> AGRI-OPS COMMAND</div>
+  <div class="scoreboard-mini" id="scoreboard-mini"></div>
+  <div class="controls">
+    <button class="iconbtn nav-home" title="Home">🏠</button>
+    <button class="iconbtn" id="daily-btn" title="Daily Challenge">📅</button>
+    <button class="iconbtn" id="leaderboard-btn" title="Leaderboard">🏆</button>
+    <button class="iconbtn" id="teacher-btn" title="Teacher / Admin">🔐</button>
+    <button class="iconbtn" id="settings-btn" title="Settings">⚙️</button>
+    <button class="iconbtn" id="contrast-btn" title="Toggle high contrast">🌓</button>
+    <button class="iconbtn" id="mute-btn" title="Mute/unmute"><span id="mute-icon">🔊</span></button>
+    <button class="iconbtn" id="fullscreen-btn" title="Fullscreen">⛶</button>
+  </div>
+</div>
+
+<div id="feedback-flash" class="feedback-flash"></div>
+
+<!-- ================= HOME ================= -->
+<section id="view-home" class="view active">
+  <div class="home-wrap">
+    <h1 id="site-title" class="title-edit" contenteditable="true" spellcheck="false" aria-label="Editable site title"></h1>
+    <p class="subtitle">CBSE Class 10 · Geography · Chapter: Agriculture — Tap the title to rename your mission</p>
+    <div class="home-actions">
+      <button class="btn primary" id="start-game-btn">▶ START GAME</button>
+      <button class="btn nav-modes">🎮 CHOOSE GAME</button>
+      <button class="btn nav-teams">👥 MANAGE TEAMS</button>
+    </div>
+    <p class="home-meta">255 briefing questions loaded · 15 mission types · Keyboard &amp; screen-reader friendly</p>
+  </div>
+</section>
+
+<!-- ================= MODE SELECT ================= -->
+<section id="view-modes" class="view">
+  <div class="center-max">
+    <div class="section-head">
+      <h2>Choose Your Mission</h2>
+      <span class="eyebrow">9 GAME MODES · AGRICULTURE CHAPTER ONLY</span>
+    </div>
+    <div class="mode-grid" id="mode-grid"></div>
+    <div class="btn-row" style="margin-top:2rem;">
+      <button class="btn ghost nav-home">← Back to Base</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRE-GAME ================= -->
+<section id="view-pregame" class="view">
+  <div class="center-max" style="max-width:560px;">
+    <div class="panel">
+      <h2 id="pregame-title" style="color:var(--orange);margin-bottom:1rem;">Mission Briefing</h2>
+      <div id="pregame-mount"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GAME ================= -->
+<section id="view-game" class="view">
+  <div class="center-max" id="game-mount"></div>
+</section>
+
+<!-- ================= TEAMS ================= -->
+<section id="view-teams" class="view">
+  <div class="center-max">
+    <div class="section-head">
+      <h2>Squad Management</h2>
+      <span class="eyebrow">UNLIMITED TEAMS · LIVE SCORES</span>
+    </div>
+    <div class="panel" style="margin-bottom:1.5rem;">
+      <div class="flex-between" style="gap:.75rem;">
+        <input class="field" id="new-team-name" type="text" placeholder="New team name (e.g. Group D)">
+        <button class="btn primary" id="add-team-btn">+ Add Team</button>
+      </div>
+    </div>
+    <div class="team-grid" id="team-grid"></div>
+    <div class="btn-row" style="margin-top:1.5rem;">
+      <button class="btn danger" id="reset-scores-btn">↺ Reset All Scores</button>
+      <button class="btn ghost nav-home">← Back to Base</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LEADERBOARD ================= -->
+<section id="view-leaderboard" class="view">
+  <div class="center-max" style="max-width:640px;">
+    <div class="section-head"><h2>Mission Leaderboard</h2></div>
+    <div id="leaderboard-list"></div>
+    <button class="btn ghost nav-home" style="margin-top:1rem;">← Back to Base</button>
+  </div>
+</section>
+
+<!-- ================= TEACHER / ADMIN ================= -->
+<section id="view-teacher" class="view">
+  <div class="center-max" style="max-width:720px;">
+    <div class="section-head"><h2>Teacher &amp; Admin Panel</h2><span class="eyebrow">PASSWORD PROTECTED</span></div>
+
+    <div class="panel" id="teacher-login">
+      <p style="margin-bottom:1rem;color:var(--muted)">Enter the teacher password to manage questions, teams, and export results.</p>
+      <div class="flex-between" style="gap:.75rem;">
+        <input class="field" id="teacher-pass" type="password" placeholder="Password">
+        <button class="btn primary" id="teacher-login-btn">Unlock</button>
+      </div>
+      <p style="margin-top:.75rem;font-size:.75rem;color:var(--muted)">Default password: <code>teacher123</code> — change it in <code>js/app.js</code> (TEACHER_PASSWORD) before classroom use.</p>
+    </div>
+
+    <div id="teacher-panel" class="hidden">
+      <div class="panel" style="margin-bottom:1.5rem;">
+        <h3 style="color:var(--blue);margin-bottom:1rem;">Add MCQ Question</h3>
+        <div style="display:flex;flex-direction:column;gap:.6rem;">
+          <input class="field" id="tq-question" placeholder="Question text">
+          <input class="field" id="tq-opt0" placeholder="Option A">
+          <input class="field" id="tq-opt1" placeholder="Option B">
+          <input class="field" id="tq-opt2" placeholder="Option C">
+          <input class="field" id="tq-opt3" placeholder="Option D">
+          <select class="field" id="tq-correct">
+            <option value="0">Correct answer: Option A</option>
+            <option value="1">Correct answer: Option B</option>
+            <option value="2">Correct answer: Option C</option>
+            <option value="3">Correct answer: Option D</option>
+          </select>
+          <div class="flex-between" style="gap:.6rem;">
+            <select class="field" id="tq-difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            <input class="field" id="tq-category" placeholder="Category (e.g. Rice, Green Revolution)">
+          </div>
+          <label style="font-size:.8rem;color:var(--muted)">Optional image (shown above the question in Multiple Choice Quiz, Rapid Fire, Group Battle, Spin the Wheel, Harvest Hunt, Survival and Boss Round)</label>
+          <input class="field" id="tq-image" type="file" accept="image/*">
+          <button class="btn primary" id="add-question-btn">+ Add to Bank</button>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:1.5rem;">
+        <h3 style="color:var(--blue);margin-bottom:1rem;">Custom Questions</h3>
+        <div id="teacher-question-list"></div>
+      </div>
+
+      <div class="panel">
+        <h3 style="color:var(--blue);margin-bottom:1rem;">Class Tools</h3>
+        <div class="btn-row">
+          <button class="btn orange" id="export-csv-btn">⬇ CSV</button>
+          <button class="btn orange" id="export-pdf-btn">🖨 PDF</button>
+          <button class="btn orange" id="export-xlsx-btn">📊 Excel (.xlsx)</button>
+          <button class="btn danger" id="teacher-reset-btn">↺ Reset All Scores</button>
+        </div>
+        <p style="font-size:.75rem;color:var(--muted);margin-top:.6rem;">PDF/Excel need one moment of internet access to fetch their generator library the first time; if the browser is fully offline they fall back to CSV / print automatically.</p>
+      </div>
+    </div>
+
+    <button class="btn ghost nav-home" style="margin-top:1.5rem;">← Back to Base</button>
+  </div>
+</section>
+
+<!-- ================= SETTINGS ================= -->
+<section id="view-settings" class="view">
+  <div class="center-max" style="max-width:640px;">
+    <div class="section-head"><h2>Settings</h2><span class="eyebrow">SAVED LOCALLY ON THIS DEVICE</span></div>
+
+    <div class="panel" style="margin-bottom:1.25rem;">
+      <h3 style="color:var(--blue);margin-bottom:1rem;">Audio</h3>
+      <label>Music volume</label>
+      <input type="range" min="0" max="100" id="set-music-vol" style="width:100%;margin:.4rem 0 1rem;">
+      <label>Sound effects volume</label>
+      <input type="range" min="0" max="100" id="set-sfx-vol" style="width:100%;margin:.4rem 0 1rem;">
+      <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" id="set-music-toggle"> Background music enabled</label>
+    </div>
+
+    <div class="panel" style="margin-bottom:1.25rem;">
+      <h3 style="color:var(--blue);margin-bottom:1rem;">Display</h3>
+      <label>Theme</label>
+      <select class="field" id="set-theme" style="margin:.4rem 0 1rem;">
+        <option value="dark">Dark (futuristic HUD)</option>
+        <option value="light">Light</option>
+      </select>
+      <label>Animations</label>
+      <select class="field" id="set-animations" style="margin:.4rem 0;">
+        <option value="on">On</option>
+        <option value="off">Reduced / Off</option>
+      </select>
+    </div>
+
+    <div class="panel" style="margin-bottom:1.25rem;">
+      <h3 style="color:var(--blue);margin-bottom:1rem;">Gameplay</h3>
+      <label>Difficulty filter (applies to solo quiz modes)</label>
+      <select class="field" id="set-difficulty" style="margin:.4rem 0 1rem;">
+        <option value="all">All difficulties</option>
+        <option value="easy">Easy only</option>
+        <option value="medium">Medium only</option>
+        <option value="hard">Hard only</option>
+      </select>
+      <label>Default question count (MCQ / True-False / Fill-Blank modes)</label>
+      <input class="field" type="number" min="3" max="30" id="set-qcount" style="margin:.4rem 0 1rem;">
+      <label>Rapid Fire duration (seconds)</label>
+      <input class="field" type="number" min="30" id="set-rapid-secs" style="margin:.4rem 0 1rem;">
+      <label>Group Battle shot clock (seconds)</label>
+      <input class="field" type="number" min="5" id="set-battle-secs" style="margin:.4rem 0 1rem;">
+      <label>Group Battle rounds per team</label>
+      <input class="field" type="number" min="1" id="set-rounds" style="margin:.4rem 0 1rem;">
+      <label>Timed-quiz per-question seconds (Farming Championship, etc.)</label>
+      <input class="field" type="number" min="5" id="set-quiz-secs" style="margin:.4rem 0;">
+    </div>
+    <button class="btn ghost nav-home">← Back to Base</button>
+  </div>
+</section>
+
+<!-- ================= MYSTERY BOX MODAL ================= -->
+<div class="modal-backdrop" id="mystery-backdrop">
+  <div class="panel modal-box">
+    <div id="mystery-box-content"></div>
+    <div class="btn-row"><button class="btn ghost sm" id="mystery-close-btn">Skip</button></div>
+  </div>
+</div>
+
+<!-- ================= END / WINNER ================= -->
+<section id="view-end" class="view">
+  <div class="home-wrap">
+    <div class="trophy">🏆</div>
+    <div class="winner-name" id="winner-name">WINNER</div>
+    <p style="color:var(--muted)">Congratulations, Commander. Mission complete.</p>
+    <div class="final-board" id="final-board"></div>
+    <div class="home-actions">
+      <button class="btn primary" id="play-again-btn">↺ Play Again</button>
+      <button class="btn ghost" id="end-return-home-btn">🏠 Return Home</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TOAST ================= -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================= QUESTION DATABASE ============================= */
+/* =========================================================================
+   QUESTION DATABASE — CBSE Class 10 Geography, Ch. Agriculture
+   Types: mcq | tf | fill | match | crop
+   Difficulty: easy | medium | hard
+   ========================================================================= */
+
+const MCQ_BANK = [
+  // ---- Types of Farming ----
+  {id:"m001",d:"easy",cat:"Farming Types",q:"Which type of farming is practised with primitive tools like hoe and dao?",opts:["Primitive Subsistence Farming","Commercial Farming","Plantation Farming","Intensive Subsistence Farming"],a:0,exp:"Primitive subsistence farming uses simple tools and family/community labour, dependent on monsoon."},
+  {id:"m002",d:"easy",cat:"Farming Types",q:"'Slash and burn' agriculture is also known as:",opts:["Jhumming","Terracing","Contour ploughing","Crop rotation"],a:0,exp:"Slash and burn agriculture is called Jhumming in North-East India."},
+  {id:"m003",d:"medium",cat:"Farming Types",q:"In which state is Jhumming known as 'Pamlou'?",opts:["Manipur","Kerala","Punjab","Rajasthan"],a:0,exp:"Jhumming is called Pamlou in Manipur."},
+  {id:"m004",d:"medium",cat:"Farming Types",q:"Intensive subsistence farming is practised in areas with:",opts:["High population pressure on land","Very low population density","Mechanised large farms","Only dry regions"],a:0,exp:"High pressure of population on land makes intensive use of land necessary, using biochemical inputs and irrigation."},
+  {id:"m005",d:"medium",cat:"Farming Types",q:"Which farming uses HYV seeds, chemical fertilisers, insecticides and pesticides on a large scale?",opts:["Commercial Farming","Primitive Subsistence Farming","Jhumming","Shifting cultivation"],a:0,exp:"Commercial farming has a higher degree of mechanisation and inputs like HYV seeds and fertilisers."},
+  {id:"m006",d:"hard",cat:"Farming Types",q:"Plantation agriculture is a type of:",opts:["Commercial farming","Subsistence farming","Shifting cultivation","Jhumming"],a:0,exp:"Plantation is a single crop grown on a large area for commercial purposes — a form of commercial farming."},
+  {id:"m007",d:"easy",cat:"Farming Types",q:"Which of these is an example of a plantation crop?",opts:["Tea","Wheat","Gram","Maize"],a:0,exp:"Tea, coffee, rubber, banana and sugarcane are common plantation crops."},
+  {id:"m008",d:"hard",cat:"Farming Types",q:"Plantation farming requires an interface of which two sectors?",opts:["Agriculture and Industry","Agriculture and Mining","Industry and Trade","Trade and Transport"],a:0,exp:"Plantation crops need capital-intensive inputs and processing, linking agriculture with industry."},
+
+  // ---- Cropping Seasons ----
+  {id:"m009",d:"easy",cat:"Cropping Seasons",q:"India has three cropping seasons: Rabi, Kharif and:",opts:["Zaid","Monsoon","Winter","Autumn"],a:0,exp:"The three cropping seasons of India are Rabi, Kharif and Zaid."},
+  {id:"m010",d:"easy",cat:"Cropping Seasons",q:"Rabi crops are sown in:",opts:["Winter","Summer","Monsoon","Autumn"],a:0,exp:"Rabi crops are sown in winter (October-December) and harvested in summer (April-June)."},
+  {id:"m011",d:"easy",cat:"Cropping Seasons",q:"Which of these is a Rabi crop?",opts:["Wheat","Rice","Jowar","Cotton"],a:0,exp:"Wheat, gram, and mustard are important Rabi crops."},
+  {id:"m012",d:"easy",cat:"Cropping Seasons",q:"Kharif crops are grown with the onset of:",opts:["Monsoon","Winter","Spring","Summer"],a:0,exp:"Kharif crops are sown with the onset of monsoon and harvested in September-October."},
+  {id:"m013",d:"easy",cat:"Cropping Seasons",q:"Which of these is a Kharif crop?",opts:["Rice","Wheat","Mustard","Gram"],a:0,exp:"Rice, maize, cotton, and jute are Kharif crops."},
+  {id:"m014",d:"medium",cat:"Cropping Seasons",q:"The short season between the Rabi and Kharif seasons is called:",opts:["Zaid","Monsoon","Retreating season","Pre-monsoon"],a:0,exp:"Zaid is a short season for growing crops like watermelon, cucumber, and fodder crops."},
+  {id:"m015",d:"medium",cat:"Cropping Seasons",q:"Which states are major producers of Rabi pulses?",opts:["Punjab and Haryana","Assam and Meghalaya","Kerala and Tamil Nadu","West Bengal and Odisha"],a:0,exp:"Punjab and Haryana are leading Rabi crop producers due to the Green Revolution."},
+
+  // ---- Rice ----
+  {id:"m016",d:"easy",cat:"Rice",q:"Rice is a crop of which season?",opts:["Kharif","Rabi","Zaid","All seasons"],a:0,exp:"Rice is predominantly a Kharif crop."},
+  {id:"m017",d:"easy",cat:"Rice",q:"Rice requires a temperature of more than:",opts:["25°C","10°C","5°C","40°C"],a:0,exp:"Rice needs high temperature (above 25°C) and high humidity."},
+  {id:"m018",d:"medium",cat:"Rice",q:"How much annual rainfall does rice require?",opts:["Above 100 cm","Below 50 cm","20-40 cm","Less than 10 cm"],a:0,exp:"Rice needs more than 100 cm rainfall; areas with less rainfall use irrigation."},
+  {id:"m019",d:"medium",cat:"Rice",q:"Which technique enabled rice cultivation in low rainfall areas of Punjab and Haryana?",opts:["Irrigation","Terracing","Jhumming","Contour ploughing"],a:0,exp:"Irrigation supports rice cultivation in low-rainfall states like Punjab, Haryana and western UP."},
+  {id:"m020",d:"hard",cat:"Rice",q:"India is the world's __ largest producer of rice, after China.",opts:["second","third","fourth","first"],a:0,exp:"India is the second-largest producer of rice in the world."},
+
+  // ---- Wheat ----
+  {id:"m021",d:"easy",cat:"Wheat",q:"Wheat is the second most important cereal crop after:",opts:["Rice","Maize","Barley","Millets"],a:0,exp:"Wheat is the main food crop in north and north-western India, second to rice."},
+  {id:"m022",d:"medium",cat:"Wheat",q:"Wheat requires which climatic conditions?",opts:["Cool growing season, bright sunshine at ripening","Hot and humid throughout","Frost-free, high rainfall only","Cold throughout the year"],a:0,exp:"Wheat needs a cool growing season and bright sunshine at the time of ripening."},
+  {id:"m023",d:"medium",cat:"Wheat",q:"The two main wheat-growing belts of India are the Ganga-Sutlej plains and:",opts:["Deccan Plateau (black soil region)","Coastal Andhra Pradesh","North-East Hills","Western Ghats"],a:0,exp:"The Ganga-Sutlej plains in the north-west and the black soil region of the Deccan are wheat belts."},
+  {id:"m024",d:"hard",cat:"Wheat",q:"Which state is the largest producer of wheat in India?",opts:["Uttar Pradesh","Punjab","Bihar","Haryana"],a:0,exp:"Uttar Pradesh is the leading wheat-producing state, followed by Punjab and Haryana."},
+
+  // ---- Millets ----
+  {id:"m025",d:"easy",cat:"Millets",q:"Which of these is called a 'coarse grain'?",opts:["Jowar","Rice","Wheat","Gram"],a:0,exp:"Jowar, bajra and ragi are coarse grains with high nutritional value."},
+  {id:"m026",d:"medium",cat:"Millets",q:"Jowar is grown in:",opts:["Rain-fed areas","Only irrigated deltas","Hilly terraces exclusively","Coastal wetlands only"],a:0,exp:"Jowar is a rain-fed crop mostly grown in Maharashtra, Karnataka, Andhra Pradesh, MP."},
+  {id:"m027",d:"medium",cat:"Millets",q:"Bajra grows well on:",opts:["Sandy soils and shallow black soil","Deep clayey soils only","Waterlogged fields","Peaty soils"],a:0,exp:"Bajra grows well on sandy soils and shallow black soils."},
+  {id:"m028",d:"medium",cat:"Millets",q:"Which state is a leading producer of ragi?",opts:["Karnataka","Punjab","Haryana","Kerala"],a:0,exp:"Karnataka is a major ragi-producing state, grown on red, black, sandy, loamy soils."},
+
+  // ---- Maize ----
+  {id:"m029",d:"easy",cat:"Maize",q:"Maize is used both as food and:",opts:["Fodder","Fibre","Fuel wood","Rubber"],a:0,exp:"Maize is a food as well as fodder crop, grown under Kharif season."},
+  {id:"m030",d:"medium",cat:"Maize",q:"Maize requires temperature between:",opts:["21°C to 27°C","0°C to 5°C","35°C to 45°C","5°C to 10°C"],a:0,exp:"Maize grows in temperatures between 21°C and 27°C on old alluvial soil."},
+
+  // ---- Pulses ----
+  {id:"m031",d:"easy",cat:"Pulses",q:"India is the world's largest producer as well as consumer of:",opts:["Pulses","Rice","Wheat","Cotton"],a:0,exp:"India leads the world in pulses production and consumption."},
+  {id:"m032",d:"medium",cat:"Pulses",q:"Pulses being leguminous crops help restore soil fertility by fixing:",opts:["Nitrogen","Phosphorus","Potassium","Carbon"],a:0,exp:"Pulses fix nitrogen from the atmosphere, which improves soil fertility."},
+  {id:"m033",d:"medium",cat:"Pulses",q:"Major pulse producing states include Madhya Pradesh, Uttar Pradesh, and:",opts:["Rajasthan","Kerala","Assam","Goa"],a:0,exp:"MP, UP, Rajasthan, Maharashtra and Karnataka are leading pulse producers."},
+
+  // ---- Cash Crops / Sugarcane ----
+  {id:"m034",d:"easy",cat:"Sugarcane",q:"Sugarcane is a crop of:",opts:["Tropical and sub-tropical areas","Cold temperate zones only","Desert regions","Hilly terraces only"],a:0,exp:"Sugarcane grows well in tropical and sub-tropical climates."},
+  {id:"m035",d:"medium",cat:"Sugarcane",q:"Sugarcane provides raw material for which industries?",opts:["Sugar and Gur (jaggery) industries","Textile industries","Cement industries","Paper industries only"],a:0,exp:"Sugarcane is the basic raw material for sugar, gur and khandsari."},
+  {id:"m036",d:"medium",cat:"Sugarcane",q:"India is the world's __ largest producer of sugarcane after Brazil.",opts:["second","third","first","fourth"],a:0,exp:"India ranks second in sugarcane production after Brazil."},
+
+  // ---- Oilseeds ----
+  {id:"m037",d:"easy",cat:"Oilseeds",q:"India is the largest producer of oilseeds in the world, occupying about __ of total cropped area.",opts:["12%","50%","5%","30%"],a:0,exp:"Oilseeds occupy about 12% of the total cropped area of India."},
+  {id:"m038",d:"medium",cat:"Oilseeds",q:"Which of these is NOT a major oilseed produced in India?",opts:["Rice","Groundnut","Mustard","Sesamum"],a:0,exp:"Groundnut, mustard, coconut, sesamum, castor seeds, cotton seeds, linseed and sunflower are major oilseeds; rice is a cereal."},
+  {id:"m039",d:"medium",cat:"Oilseeds",q:"Groundnut is grown mainly in:",opts:["Kharif season","Rabi season","Zaid season only","Winter only"],a:0,exp:"Groundnut is a Kharif crop and India is its largest producer, sharing 1/3rd of the world's area."},
+  {id:"m040",d:"hard",cat:"Oilseeds",q:"Mustard is largely a crop of:",opts:["Rabi season","Kharif season","Zaid season","Monsoon season"],a:0,exp:"Mustard is grown in the Rabi season in India."},
+
+  // ---- Tea ----
+  {id:"m041",d:"easy",cat:"Tea",q:"Tea cultivation is an example of:",opts:["Plantation agriculture","Subsistence farming","Shifting cultivation","Jhumming"],a:0,exp:"Tea is grown on plantations requiring capital, labour and managerial skill."},
+  {id:"m042",d:"medium",cat:"Tea",q:"Tea requires soil rich in:",opts:["Humus and organic matter","Salt content","Sand only","Limestone"],a:0,exp:"Tea grows well in deep and fertile well-drained soil, rich in humus and organic matter."},
+  {id:"m043",d:"medium",cat:"Tea",q:"Which state is the largest producer of tea in India?",opts:["Assam","Kerala","Karnataka","Himachal Pradesh"],a:0,exp:"Assam, along with hills of Darjeeling and Jalpaiguri in West Bengal, is a leading tea region."},
+  {id:"m044",d:"hard",cat:"Tea",q:"Tea plantations need labour that is:",opts:["Skilled and cheap in abundance","Unskilled and scarce","Only seasonal, no training needed","Fully mechanised, no labour"],a:0,exp:"Tea is a labour-intensive industry requiring an abundant supply of cheap, skilled labour."},
+
+  // ---- Coffee ----
+  {id:"m045",d:"easy",cat:"Coffee",q:"Indian coffee is known in the international market for:",opts:["Good quality","Poor quality","Being genetically modified","Being cheapest"],a:0,exp:"Indian coffee, the Arabica variety, is known globally for good quality."},
+  {id:"m046",d:"medium",cat:"Coffee",q:"Coffee cultivation in India is mainly confined to the:",opts:["Nilgiri hills of Karnataka, Kerala and Tamil Nadu","Himalayan foothills","Gangetic plains","Thar desert"],a:0,exp:"Coffee is grown in the Nilgiri hills of Karnataka, Kerala and Tamil Nadu."},
+
+  // ---- Rubber ----
+  {id:"m047",d:"easy",cat:"Rubber",q:"Rubber is an important:",opts:["Industrial raw material","Food crop","Cereal crop","Pulse"],a:0,exp:"Rubber is an equatorial crop used as an important raw material for industry."},
+  {id:"m048",d:"medium",cat:"Rubber",q:"Rubber requires moist and humid climate with rainfall of more than:",opts:["200 cm","20 cm","500 cm","50 cm"],a:0,exp:"Rubber requires more than 200 cm of rainfall and temperature above 25°C."},
+  {id:"m049",d:"medium",cat:"Rubber",q:"Rubber is mainly grown in:",opts:["Kerala, Tamil Nadu, Andaman & Nicobar Islands","Punjab and Haryana","Rajasthan and Gujarat","Jammu and Kashmir"],a:0,exp:"Kerala, Tamil Nadu and the Andaman & Nicobar and Garo hills produce rubber."},
+
+  // ---- Cotton ----
+  {id:"m050",d:"easy",cat:"Cotton",q:"India is believed to be the original home of:",opts:["Cotton","Wheat","Tea","Coffee"],a:0,exp:"India is considered the original home of the cotton plant."},
+  {id:"m051",d:"medium",cat:"Cotton",q:"Cotton grows well in:",opts:["Black soil of the Deccan Plateau","Peaty soil","Laterite soil only","Desert sand only"],a:0,exp:"Cotton requires black soil, high temperature, light rainfall or irrigation, 210 frost-free days."},
+  {id:"m052",d:"medium",cat:"Cotton",q:"Cotton is the basic raw material for the __ industry.",opts:["Cotton textile","Sugar","Paper","Cement"],a:0,exp:"Cotton is the raw material for the cotton textile industry."},
+  {id:"m053",d:"hard",cat:"Cotton",q:"Cotton requires how many frost-free days?",opts:["210","100","365","30"],a:0,exp:"Cotton needs about 210 frost-free days and bright sunshine for its growth."},
+
+  // ---- Jute ----
+  {id:"m054",d:"easy",cat:"Jute",q:"Jute is known as the:",opts:["Golden Fibre","Silver Fibre","Black Gold","White Gold"],a:0,exp:"Jute is popularly known as the Golden Fibre."},
+  {id:"m055",d:"medium",cat:"Jute",q:"Jute grows well on:",opts:["Well-drained fertile soils in flood plains","Dry desert soils","Rocky mountain terrain","Saline coastal soil"],a:0,exp:"Jute grows on well-drained fertile soil in flood plains where soil is renewed every year."},
+  {id:"m056",d:"medium",cat:"Jute",q:"Which state is the largest producer of jute?",opts:["West Bengal","Punjab","Gujarat","Rajasthan"],a:0,exp:"West Bengal, Bihar and Assam are the leading jute-producing states."},
+
+  // ---- Horticulture ----
+  {id:"m057",d:"easy",cat:"Horticulture",q:"India is a producer of which fruits and vegetables in large quantity?",opts:["Both fruits and vegetables","Only cereals","Only pulses","Only oilseeds"],a:0,exp:"India produces a variety of fruits and vegetables and ranks very high in the world."},
+  {id:"m058",d:"medium",cat:"Horticulture",q:"India is the largest producer of which fruit in the world?",opts:["Mangoes","Apples","Grapes","Oranges"],a:0,exp:"India is the world's largest producer of mangoes."},
+
+  // ---- Green Revolution & Technological Reforms ----
+  {id:"m059",d:"easy",cat:"Green Revolution",q:"The Green Revolution in India began in the:",opts:["1960s","1980s","1990s","1940s"],a:0,exp:"The Green Revolution, based on HYV seeds, began in the mid-1960s."},
+  {id:"m060",d:"medium",cat:"Green Revolution",q:"The Green Revolution relied heavily on:",opts:["High Yielding Variety (HYV) seeds","Organic manure only","Traditional seeds","Shifting cultivation"],a:0,exp:"HYV seeds, along with fertilisers and irrigation, drove the Green Revolution."},
+  {id:"m061",d:"medium",cat:"Green Revolution",q:"'White Revolution' refers to a program to increase the production of:",opts:["Milk","Rice","Cotton","Sugar"],a:0,exp:"White Revolution (Operation Flood) boosted milk production."},
+  {id:"m062",d:"medium",cat:"Institutional Reforms",q:"Which scheme provides loans to farmers to purchase agricultural inputs?",opts:["Kisan Credit Card (KCC)","National Food Security Mission","PM-Kisan Yojana only","MGNREGA"],a:0,exp:"Kisan Credit Card (KCC) and Personal Accident Insurance Scheme (PAIS) support farmers with credit."},
+  {id:"m063",d:"hard",cat:"Institutional Reforms",q:"Land reforms after independence mainly aimed at:",opts:["Abolishing the Zamindari system","Introducing plantation farming","Encouraging Jhumming","Promoting cash crops only"],a:0,exp:"The first major reform after independence was the abolition of the Zamindari system."},
+  {id:"m064",d:"medium",cat:"Institutional Reforms",q:"The government announces __ before the sowing season to protect farmers from unwarranted price fluctuations.",opts:["Minimum Support Price (MSP)","Retail Price Index","Wholesale Price only","Consumer Price Index"],a:0,exp:"Minimum Support Price (MSP), remunerative and procurement prices are announced for crops."},
+  {id:"m065",d:"medium",cat:"Institutional Reforms",q:"Which system offers real-time information and services to farmers via internet/mobile?",opts:["e-technology / Kisan Call Centres","Zamindari system","Jhumming","Contour ploughing"],a:0,exp:"e-technology through Kisan Call Centres and portals helps farmers with real-time advice."},
+
+  // ---- Food Security & Contribution to Economy ----
+  {id:"m066",d:"easy",cat:"Food Security",q:"India has become self-sufficient in food grains due to:",opts:["Green Revolution","Only rainfall","Foreign imports","Jhumming"],a:0,exp:"The Green Revolution helped India achieve self-sufficiency in food grain production."},
+  {id:"m067",d:"medium",cat:"Economy",q:"Agriculture provides employment to nearly __ of the population of India (traditionally, per NCERT).",opts:["Two-thirds","One-tenth","One-fourth","Nine-tenths"],a:0,exp:"NCERT text notes that about two-thirds of India's population is still dependent on agriculture."},
+  {id:"m068",d:"medium",cat:"Economy",q:"Agriculture is a source of raw material for which sector?",opts:["Agro-based industries","Mining sector only","IT sector","Banking sector"],a:0,exp:"Agriculture supplies raw material to agro-based industries such as sugar, textile, and food processing."},
+
+  // ---- Globalization & Miscellaneous ----
+  {id:"m069",d:"medium",cat:"Globalization",q:"WTO stands for:",opts:["World Trade Organisation","World Textile Organisation","World Trust Organisation","World Tariff Office"],a:0,exp:"WTO (World Trade Organisation) agreements affect Indian farmers by opening trade to global competition."},
+  {id:"m070",d:"hard",cat:"Globalization",q:"Since 1990s, under the WTO, Indian farmers have shifted focus towards:",opts:["Crops which have a huge export potential","Only subsistence crops","Only traditional millets","Only forest products"],a:0,exp:"After globalization, farmers began producing crops with export potential like cotton, fruits."},
+  {id:"m071",d:"medium",cat:"Organic Farming",q:"Farming without the use of chemical fertilisers and pesticides is called:",opts:["Organic farming","Commercial farming","Plantation farming","Intensive farming"],a:0,exp:"Organic farming uses manures and biopesticides instead of chemical inputs."},
+  {id:"m072",d:"medium",cat:"Organic Farming",q:"A major benefit of organic farming is:",opts:["It is eco-friendly and cheaper","It always gives higher yield than HYV","It requires more chemicals","It needs no labour"],a:0,exp:"Organic farming is cost effective and environment friendly, though yields can be lower initially."},
+
+  // ---- Extra applied/analytical ----
+  {id:"m073",d:"hard",cat:"Farming Types",q:"Which farming type is characterised by 'right of inheritance' leading to sub-division of land?",opts:["Intensive Subsistence Farming","Plantation Farming","Commercial Farming","Jhumming"],a:0,exp:"In intensive subsistence farming, land holdings are small due to the right of inheritance."},
+  {id:"m074",d:"hard",cat:"Rice",q:"Besides irrigation, which region uses the Rabi season to also grow rice through irrigation facilities?",opts:["West Bengal, Odisha, Andhra Pradesh, Tamil Nadu","Punjab and Haryana only","Rajasthan desert","Ladakh"],a:0,exp:"With the help of irrigation, rice is also grown in the Rabi season in West Bengal, Odisha, AP and TN."},
+  {id:"m075",d:"medium",cat:"Wheat",q:"Wheat is basically a crop of the:",opts:["Temperate zone","Equatorial zone","Tropical rainforest","Polar zone"],a:0,exp:"Wheat is grown in temperate zones, needing a cool growing season."},
+  {id:"m076",d:"medium",cat:"Millets",q:"Which of these crops is known as a 'dual crop' since it is used as food and fodder both?",opts:["Jowar","Tea","Rubber","Jute"],a:0,exp:"Jowar is a rain-fed crop grown for food and fodder both."},
+  {id:"m077",d:"hard",cat:"Sugarcane",q:"Sugarcane requires rainfall between:",opts:["75 cm to 100 cm","10 cm to 20 cm","300 cm to 400 cm","0 cm to 5 cm"],a:0,exp:"Sugarcane needs a hot and humid climate with rainfall between 75 cm and 100 cm."},
+  {id:"m078",d:"medium",cat:"Cotton",q:"Which is NOT a major cotton-producing state?",opts:["Kerala","Maharashtra","Gujarat","Madhya Pradesh"],a:0,exp:"Maharashtra, Gujarat, MP, Karnataka, AP, Punjab, Haryana, and Rajasthan are cotton belts; Kerala is not."},
+  {id:"m079",d:"hard",cat:"Institutional Reforms",q:"'Consolidation of holdings' was a reform that aimed to:",opts:["Combine fragmented land parcels into one holding","Divide large farms among tenants","Introduce cash crops","Abolish irrigation canals"],a:0,exp:"Consolidation of holdings combined fragmented plots into a single holding for efficient farming."},
+  {id:"m080",d:"medium",cat:"Food Security",q:"Special weather bulletins and agro-meteorological advisories help farmers by:",opts:["Providing timely information for planning agricultural activities","Replacing the need for irrigation","Eliminating pests permanently","Fixing crop prices"],a:0,exp:"Special weather bulletins help farmers plan sowing, irrigation and harvesting."},
+
+  // ---- Irrigation ----
+  {id:"m081",d:"easy",cat:"Irrigation",q:"Which is the most common source of irrigation in India?",opts:["Canals and wells","Rain barrels","Desalination plants","Glacial lakes"],a:0,exp:"Canals and wells (including tube wells) together account for the largest share of net irrigated area."},
+  {id:"m082",d:"medium",cat:"Irrigation",q:"Drip irrigation is especially useful because it:",opts:["Delivers water directly to plant roots, minimising wastage","Floods the entire field uniformly","Requires no water source","Works only for rice"],a:0,exp:"Drip irrigation conserves water by delivering it drop by drop to the root zone."},
+  {id:"m083",d:"medium",cat:"Irrigation",q:"Sprinkler irrigation is best suited for:",opts:["Undulating land with uneven relief","Perfectly flat paddy fields only","Desert dunes with no crops","Only for tea plantations"],a:0,exp:"Sprinkler irrigation is suitable for uneven land and sandy soils where canal irrigation isn't feasible."},
+  {id:"m084",d:"hard",cat:"Irrigation",q:"Why is irrigation particularly important in western and southern parts of India?",opts:["Because rainfall is uncertain and inadequate for agriculture there","Because these regions receive more than 300 cm rainfall","Because these areas have no soil at all","Because crops there don't need water"],a:0,exp:"Uncertain, insufficient rainfall makes irrigation essential in states like Rajasthan, Gujarat and parts of the Deccan."},
+
+  // ---- Assertion & Reason ----
+  {id:"m085",d:"hard",cat:"Assertion-Reason",q:"Assertion (A): Rice cultivation is possible in low-rainfall areas of Punjab and Haryana.\nReason (R): These states have well-developed irrigation infrastructure.\nChoose the correct option.",opts:["Both A and R are true, and R correctly explains A","Both A and R are true, but R does not explain A","A is true but R is false","A is false but R is true"],a:0,exp:"Irrigation compensates for low rainfall, correctly explaining rice cultivation in these states."},
+  {id:"m086",d:"hard",cat:"Assertion-Reason",q:"Assertion (A): Pulses are important in Indian agriculture.\nReason (R): Being leguminous crops, they help restore soil fertility by nitrogen fixation.\nChoose the correct option.",opts:["Both A and R are true, and R correctly explains A","Both A and R are true, but R does not explain A","A is true but R is false","Both A and R are false"],a:0,exp:"Pulses fix atmospheric nitrogen, which directly explains their importance for soil health."},
+  {id:"m087",d:"hard",cat:"Assertion-Reason",q:"Assertion (A): The Green Revolution mainly benefited Punjab, Haryana and western Uttar Pradesh.\nReason (R): These regions had strong irrigation networks and adopted HYV seeds early.\nChoose the correct option.",opts:["Both A and R are true, and R correctly explains A","Both A and R are true, but R does not explain A","A is true but R is false","A is false but R is true"],a:0,exp:"Irrigation and early HYV adoption in these states directly explain the concentrated benefit of the Green Revolution there."},
+  {id:"m088",d:"hard",cat:"Assertion-Reason",q:"Assertion (A): Tea is grown mainly in hilly, well-drained areas.\nReason (R): Tea bushes cannot tolerate waterlogging.\nChoose the correct option.",opts:["Both A and R are true, and R correctly explains A","Both A and R are true, but R does not explain A","A is true but R is false","A is false but R is true"],a:0,exp:"Tea needs well-drained soil precisely because its roots cannot tolerate standing water."},
+  {id:"m089",d:"hard",cat:"Assertion-Reason",q:"Assertion (A): India has achieved self-sufficiency in food grain production.\nReason (R): This is entirely due to increased use of chemical pesticides alone.\nChoose the correct option.",opts:["A is true but R is false (self-sufficiency owes to HYV seeds, irrigation and fertilisers together, not pesticides alone)","Both A and R are true, and R correctly explains A","A is false but R is true","Both A and R are false"],a:0,exp:"Self-sufficiency resulted from combined Green Revolution inputs — HYV seeds, irrigation, fertilisers — not pesticides in isolation."},
+
+  // ---- Case-based / Competency-based ----
+  {id:"m090",d:"hard",cat:"Case-based",q:"A farmer in Punjab wants to switch from wheat to a Zaid-season crop to use his field productively in the summer gap. Which crop should he choose?",opts:["Watermelon or cucumber","Wheat","Mustard","Tea"],a:0,exp:"Watermelon, cucumber and other vegetables are typical Zaid crops grown in the short summer season."},
+  {id:"m091",d:"hard",cat:"Case-based",q:"A student reads that a region has 'red and black soil, hot climate, and 210 frost-free days'. Which cash crop is this region most likely suited for?",opts:["Cotton","Tea","Wheat","Jute"],a:0,exp:"These are the classic climatic and soil requirements for cotton cultivation in the Deccan."},
+  {id:"m092",d:"hard",cat:"Case-based",q:"A village in West Bengal has fertile flood-plain soil that gets renewed every year by river silt. Which fibre crop would grow best there?",opts:["Jute","Cotton","Rubber","Wheat"],a:0,exp:"Jute thrives in the flood plains of West Bengal, where fresh alluvium is deposited annually."},
+  {id:"m093",d:"medium",cat:"Case-based",q:"A teacher tells students that a certain scheme protects farmers if their crop is destroyed by unseasonal rain or drought. Which scheme is she describing?",opts:["Crop Insurance","Kisan Credit Card","Minimum Support Price","Consolidation of Holdings"],a:0,exp:"Crop insurance schemes compensate farmers for losses due to natural calamities."},
+  {id:"m094",d:"medium",cat:"Competency-based",q:"If the monsoon is delayed by a month, which cropping season is affected first?",opts:["Kharif","Rabi","Zaid","None, monsoon timing doesn't matter"],a:0,exp:"Kharif crops are sown with the onset of monsoon, so a delay directly affects Kharif sowing."},
+  {id:"m095",d:"medium",cat:"Competency-based",q:"A farmer notices his rice yield has plateaued despite using more fertiliser. What is the most likely long-term solution suggested by sustainable agriculture practices?",opts:["Adopt organic farming / balanced nutrient management","Use even more chemical fertiliser","Abandon rice farming entirely","Switch to Jhumming"],a:0,exp:"Excess chemical fertiliser can degrade soil health over time; balanced or organic practices help restore productivity."},
+  {id:"m096",d:"medium",cat:"Competency-based",q:"Two neighbouring states have the same rainfall, but one produces more rice. What is the most likely reason?",opts:["Differences in soil fertility, irrigation or technology adoption","Rice does not depend on any of these factors","One state simply has more people","Rice yield never varies between states"],a:0,exp:"Soil quality, irrigation coverage and farming technology explain productivity differences even under similar rainfall."},
+
+  // ---- More Institutional / Technological Reforms ----
+  {id:"m097",d:"medium",cat:"Institutional Reforms",q:"e-NAM (National Agriculture Market) is a platform that helps farmers by:",opts:["Connecting agricultural markets online for better price discovery","Providing free irrigation water","Replacing the need for MSP","Growing crops automatically"],a:0,exp:"e-NAM is an online trading platform linking existing APMC mandis for transparent price discovery."},
+  {id:"m098",d:"medium",cat:"Institutional Reforms",q:"The Public Distribution System (PDS) is linked to agriculture because it:",opts:["Distributes foodgrains from buffer stocks to the poor at subsidised rates","Grows crops directly for farmers","Sets irrigation schedules","Replaces the need for farming"],a:0,exp:"PDS distributes food grains procured from farmers (often via MSP) to vulnerable sections of society."},
+  {id:"m099",d:"medium",cat:"Institutional Reforms",q:"Buffer stock refers to:",opts:["Food grain stock procured by the government for distribution during shortage","A type of fertiliser","A crop insurance scheme","A type of irrigation canal"],a:0,exp:"Buffer stock is the reserve of food grains maintained by the government (via FCI) for food security."},
+  {id:"m100",d:"medium",cat:"Institutional Reforms",q:"Contract farming involves:",opts:["An agreement between farmers and buyers/companies before the crop is grown","Farmers competing against each other","Government seizing farm land","A ban on selling crops"],a:0,exp:"Contract farming links farmers with agribusiness firms through pre-agreed terms of production and sale."},
+
+  // ---- More Soil & Climate ----
+  {id:"m101",d:"easy",cat:"Soil",q:"Which soil type is best suited for cotton cultivation?",opts:["Black soil","Laterite soil","Desert soil","Peaty soil"],a:0,exp:"Black (regur) soil of the Deccan Plateau is ideal for cotton due to its moisture-retention capacity."},
+  {id:"m102",d:"medium",cat:"Soil",q:"Alluvial soil, found in river plains, is especially suitable for:",opts:["Rice and wheat cultivation","Rubber only","Desert shrubs","Tea plantations exclusively"],a:0,exp:"Fertile alluvial soil in the Indo-Gangetic plains supports intensive rice and wheat cultivation."},
+  {id:"m103",d:"medium",cat:"Climate",q:"Which climatic factor most directly determines the difference between Rabi and Kharif crops?",opts:["Temperature and rainfall patterns across seasons","Soil colour only","Distance from the equator","Number of farmers in the region"],a:0,exp:"Seasonal changes in temperature and monsoon rainfall define which crops can be sown as Rabi or Kharif."},
+
+  // ---- More on Major Producing States ----
+  {id:"m104",d:"medium",cat:"Major States",q:"Which state leads in groundnut production in India?",opts:["Gujarat","Punjab","Kerala","West Bengal"],a:0,exp:"Gujarat is a leading groundnut-producing state along with Andhra Pradesh and Tamil Nadu."},
+  {id:"m105",d:"medium",cat:"Major States",q:"Punjab and Haryana are especially known for high production of:",opts:["Wheat and rice (Green Revolution belt)","Tea and coffee","Rubber and coconut","Jute and rice only"],a:0,exp:"Punjab and Haryana became the core of the Green Revolution, leading in wheat and irrigated rice."},
+  {id:"m106",d:"hard",cat:"Major States",q:"Which state is the largest producer of cotton in India (as per NCERT-era data)?",opts:["Gujarat","Punjab","West Bengal","Kerala"],a:0,exp:"Gujarat, Maharashtra and Madhya Pradesh are the top cotton-producing states."},
+
+  // ---- More on Cropping Intensity & Land Use ----
+  {id:"m107",d:"hard",cat:"Land Use",q:"'Cropping intensity' refers to:",opts:["The number of times land is cropped in a year","The strength of the crop's flavour","The height of the crop plant","The colour of the crop"],a:0,exp:"Cropping intensity measures how many times a field is used for growing crops within an agricultural year."},
+  {id:"m108",d:"hard",cat:"Land Use",q:"Multiple cropping (growing more than one crop on the same field in a year) helps farmers mainly by:",opts:["Increasing total farm income and land-use efficiency","Reducing soil fertility permanently","Making irrigation unnecessary","Eliminating the need for fertilisers"],a:0,exp:"Multiple cropping raises productivity and income per unit of land over the year."},
+
+  // ---- More on Green Revolution / Mechanisation ----
+  {id:"m109",d:"medium",cat:"Green Revolution",q:"One criticism of the Green Revolution is that it led to:",opts:["Regional disparities, favouring irrigated areas over rain-fed ones","Complete elimination of food scarcity everywhere","No environmental impact whatsoever","A decline in wheat production"],a:0,exp:"The Green Revolution's benefits were concentrated in irrigated regions, widening regional inequality."},
+  {id:"m110",d:"medium",cat:"Green Revolution",q:"Mechanisation of agriculture (tractors, harvesters) mainly helps by:",opts:["Increasing efficiency and reducing labour time on large farms","Making irrigation unnecessary","Automatically improving soil fertility","Replacing the need for seeds"],a:0,exp:"Mechanisation speeds up sowing, harvesting, and other operations, especially on large commercial farms."},
+
+  // ---- More scattered factual MCQs across categories to round out coverage ----
+  {id:"m111",d:"easy",cat:"Rice",q:"Which of these states grows rice using irrigation despite low rainfall?",opts:["Punjab","Kerala","Assam","West Bengal"],a:0,exp:"Punjab, with irrigation support, grows rice despite comparatively low natural rainfall."},
+  {id:"m112",d:"easy",cat:"Wheat",q:"Wheat cultivation depends on adequate:",opts:["Winter rainfall / irrigation and a cool climate","Tropical heat year-round","Saline soil","High humidity throughout the year"],a:0,exp:"Wheat needs a cool climate and moisture during winter, often supplemented by irrigation."},
+  {id:"m113",d:"medium",cat:"Millets",q:"Which of these is NOT a millet?",opts:["Sugarcane","Jowar","Bajra","Ragi"],a:0,exp:"Sugarcane is a cash crop, not a millet; jowar, bajra and ragi are the coarse-grain millets."},
+  {id:"m114",d:"medium",cat:"Oilseeds",q:"Sesamum (til) is grown as which season's crop in North India, and Rabi in South India?",opts:["Kharif","Zaid only","Only Rabi everywhere","Not grown in India"],a:0,exp:"Sesamum is grown as a Kharif crop in North India and as a Rabi crop in South India."},
+  {id:"m115",d:"hard",cat:"Cash Crops",q:"Which of the following best describes 'cash crops'?",opts:["Crops grown mainly to be sold in the market for profit","Crops that are always food grains","Crops grown only for the farmer's own family","Crops that need no water"],a:0,exp:"Cash crops like cotton, jute, sugarcane and oilseeds are cultivated primarily for sale, not home consumption."},
+  {id:"m116",d:"hard",cat:"Economy",q:"Which of these best explains why agriculture is called the backbone of the Indian economy?",opts:["It supports livelihoods of a majority of the rural population and feeds allied industries","It contributes zero to GDP","It only affects urban areas","It has no linkage with other sectors"],a:0,exp:"Agriculture supports rural livelihoods directly and supplies raw material to numerous agro-based industries."},
+  {id:"m117",d:"medium",cat:"Food Security",q:"Food security in India rests on three pillars: availability, access and:",opts:["Affordability","Advertising","Automation","Aviation"],a:0,exp:"Food security requires food to be available, accessible, and affordable to all sections of society."},
+  {id:"m118",d:"medium",cat:"Globalization",q:"Under globalization, Indian agriculture faces competition mainly from:",opts:["Highly subsidised agricultural produce from other countries","Only domestic farmers","No external competition at all","Only the fishing industry"],a:0,exp:"Cheaper, subsidised imports from other countries create competitive pressure on Indian farmers."},
+  {id:"m119",d:"easy",cat:"Organic Farming",q:"Which of these is used as fertiliser in organic farming?",opts:["Cow dung / compost manure","Synthetic urea only","Petroleum-based chemicals","Plastic mulch only"],a:0,exp:"Organic farming relies on manure, compost, and biological methods rather than synthetic chemicals."},
+  {id:"m120",d:"hard",cat:"Organic Farming",q:"A likely long-term benefit of shifting a farm to organic methods is:",opts:["Improved soil health and reduced chemical runoff into water bodies","Immediate doubling of yield in the very first year","Complete elimination of the need for water","No change in soil quality at all"],a:0,exp:"Organic farming tends to improve soil structure and reduce chemical pollution over time, though yields may take time to stabilise."}
+];
+
+const TF_BANK = [
+  {id:"t001",d:"easy",cat:"Cropping Seasons",q:"Rice is grown in the Rabi season across all of India.",a:false,exp:"Rice is primarily a Kharif crop, though it is grown in Rabi season in a few states with irrigation."},
+  {id:"t002",d:"easy",cat:"Farming Types",q:"Jhumming is a form of shifting cultivation.",a:true,exp:"Jhumming, practised in North-East India, is a type of shifting/slash-and-burn cultivation."},
+  {id:"t003",d:"easy",cat:"Jute",q:"Jute is known as the Golden Fibre.",a:true,exp:"Jute is called the Golden Fibre due to its colour and value."},
+  {id:"t004",d:"medium",cat:"Wheat",q:"Uttar Pradesh is the largest producer of wheat in India.",a:true,exp:"UP leads wheat production, followed by Punjab and Haryana."},
+  {id:"t005",d:"easy",cat:"Pulses",q:"India is the largest producer and consumer of pulses in the world.",a:true,exp:"India leads globally in both pulses production and consumption."},
+  {id:"t006",d:"medium",cat:"Tea",q:"Tea plantations require abundant, cheap and skilled labour.",a:true,exp:"Tea cultivation is labour-intensive and needs skilled workers throughout the year."},
+  {id:"t007",d:"medium",cat:"Cotton",q:"Cotton is best suited to the alluvial soils of the Ganga plain.",a:false,exp:"Cotton grows best in black soil of the Deccan Plateau, not alluvial soil."},
+  {id:"t008",d:"easy",cat:"Rubber",q:"Rubber is an equatorial crop, but also grows under tropical and sub-tropical conditions.",a:true,exp:"Rubber originally an equatorial crop, is now grown in tropical/sub-tropical regions like Kerala."},
+  {id:"t009",d:"medium",cat:"Green Revolution",q:"The Green Revolution led to India's self-sufficiency in food grains.",a:true,exp:"The Green Revolution of the 1960s made India self-sufficient in food grain production."},
+  {id:"t010",d:"medium",cat:"Institutional Reforms",q:"MSP stands for Maximum Selling Price.",a:false,exp:"MSP stands for Minimum Support Price, announced to protect farmers from price fluctuations."},
+  {id:"t011",d:"easy",cat:"Sugarcane",q:"India is the world's largest producer of sugarcane.",a:false,exp:"India is the second largest producer of sugarcane, after Brazil."},
+  {id:"t012",d:"medium",cat:"Oilseeds",q:"Groundnut is a Rabi season crop in India.",a:false,exp:"Groundnut is primarily grown in the Kharif season."},
+  {id:"t013",d:"easy",cat:"Coffee",q:"Indian coffee is famous internationally for its poor quality.",a:false,exp:"Indian coffee, especially the Arabica variety, is known for good quality."},
+  {id:"t014",d:"hard",cat:"Farming Types",q:"Commercial farming has a lower degree of mechanisation than subsistence farming.",a:false,exp:"Commercial farming has a HIGHER degree of mechanisation than subsistence farming."},
+  {id:"t015",d:"medium",cat:"Organic Farming",q:"Organic farming relies on chemical fertilisers for higher yield.",a:false,exp:"Organic farming avoids chemical fertilisers and pesticides, using organic manure instead."},
+  {id:"t016",d:"easy",cat:"Millets",q:"Jowar, bajra and ragi are known as coarse grains.",a:true,exp:"These millets are collectively known as coarse grains, rich in nutrients."},
+  {id:"t017",d:"medium",cat:"Rice",q:"Rice requires high temperature and high humidity for cultivation.",a:true,exp:"Rice is a Kharif crop needing temperature above 25°C and high humidity."},
+  {id:"t018",d:"medium",cat:"Globalization",q:"WTO agreements have had no impact on Indian agriculture.",a:false,exp:"WTO agreements have significantly influenced cropping patterns and trade in Indian agriculture."},
+  {id:"t019",d:"hard",cat:"Institutional Reforms",q:"Consolidation of holdings and abolition of zamindari were part of land reforms.",a:true,exp:"Both were key institutional/land reforms undertaken after Independence."},
+  {id:"t020",d:"easy",cat:"Cash Crops",q:"Cash crops are grown for the farmer's own consumption, not for sale.",a:false,exp:"Cash crops like cotton, sugarcane and oilseeds are grown mainly for sale in the market."},
+  {id:"t021",d:"medium",cat:"Horticulture",q:"India is the world's largest producer of mangoes.",a:true,exp:"India leads global mango production."},
+  {id:"t022",d:"easy",cat:"Cropping Seasons",q:"Zaid is a season between Rabi and Kharif.",a:true,exp:"Zaid is the short summer cropping season between Rabi and Kharif."},
+  {id:"t023",d:"medium",cat:"Wheat",q:"Wheat needs a hot and humid climate throughout its growth cycle.",a:false,exp:"Wheat needs a cool growing season and bright sunshine at the time of ripening."},
+  {id:"t024",d:"medium",cat:"Jute",q:"West Bengal is a leading producer of jute in India.",a:true,exp:"West Bengal, Bihar and Assam lead jute production."},
+  {id:"t025",d:"hard",cat:"Economy",q:"Agriculture has no role in supplying raw material to industries.",a:false,exp:"Agriculture supplies raw materials to agro-based industries like sugar, textiles and food processing."},
+  {id:"t026",d:"easy",cat:"Irrigation",q:"Canals and wells are among the most common sources of irrigation in India.",a:true,exp:"Canals and wells (including tube wells) supply the largest share of irrigated area in India."},
+  {id:"t027",d:"medium",cat:"Irrigation",q:"Drip irrigation wastes more water than flood irrigation.",a:false,exp:"Drip irrigation is far more water-efficient than flood irrigation since it targets the root zone directly."},
+  {id:"t028",d:"medium",cat:"Institutional Reforms",q:"e-NAM is an online platform that helps connect agricultural markets across India.",a:true,exp:"e-NAM (National Agriculture Market) links APMC mandis for transparent online trading."},
+  {id:"t029",d:"medium",cat:"Institutional Reforms",q:"Buffer stock refers to food grains kept in reserve by the government for distribution during shortage.",a:true,exp:"Buffer stock, managed largely by the FCI, ensures food security during shortages."},
+  {id:"t030",d:"hard",cat:"Green Revolution",q:"The Green Revolution benefited all regions of India equally.",a:false,exp:"Its benefits were concentrated mainly in irrigated states like Punjab, Haryana and western UP."},
+  {id:"t031",d:"easy",cat:"Soil",q:"Black soil is well suited for cotton cultivation.",a:true,exp:"Black (regur) soil retains moisture well, which suits cotton."},
+  {id:"t032",d:"medium",cat:"Major States",q:"Gujarat is a leading producer of groundnut in India.",a:true,exp:"Gujarat, along with Andhra Pradesh and Tamil Nadu, leads groundnut production."},
+  {id:"t033",d:"medium",cat:"Land Use",q:"Cropping intensity refers to the number of times land is cropped in an agricultural year.",a:true,exp:"Higher cropping intensity means the same land is used for more crop cycles in a year."},
+  {id:"t034",d:"medium",cat:"Case-based",q:"Watermelon and cucumber are typically grown in the Zaid season.",a:true,exp:"These short-duration crops are grown in the summer Zaid season between Rabi and Kharif."},
+  {id:"t035",d:"medium",cat:"Food Security",q:"The Public Distribution System (PDS) has no connection to agricultural procurement.",a:false,exp:"PDS distributes food grains that are largely procured from farmers via mechanisms like MSP."},
+  {id:"t036",d:"hard",cat:"Contract Farming",q:"Contract farming involves an agreement between farmers and buyers before the crop is grown.",a:true,exp:"Under contract farming, terms of production and sale are agreed upon in advance."},
+  {id:"t037",d:"easy",cat:"Rice",q:"Rice can be grown in the Rabi season in some states with irrigation, such as West Bengal.",a:true,exp:"With irrigation, rice is also grown in the Rabi season in states like WB, Odisha, AP and TN."},
+  {id:"t038",d:"medium",cat:"Mechanisation",q:"Mechanisation of agriculture generally increases efficiency on large farms.",a:true,exp:"Tractors and harvesters speed up farm operations, especially on large commercial holdings."},
+  {id:"t039",d:"hard",cat:"Cotton",q:"Cotton requires waterlogged soil to grow well.",a:false,exp:"Cotton actually requires well-drained black soil and cannot tolerate waterlogging."}
+];
+
+const FILL_BANK = [
+  {id:"f001",d:"easy",cat:"Cropping Seasons",q:"The three cropping seasons of India are Rabi, Kharif and ______.",a:"zaid",exp:"Zaid is the short summer season between Rabi and Kharif."},
+  {id:"f002",d:"easy",cat:"Jute",q:"Jute is popularly known as the ______ Fibre.",a:"golden",exp:"Jute's colour and value earned it the name 'Golden Fibre'."},
+  {id:"f003",d:"medium",cat:"Farming Types",q:"Shifting cultivation is known as ______ in North-East India.",a:"jhumming",exp:"Jhumming is the local name for shifting/slash-and-burn cultivation in the North-East."},
+  {id:"f004",d:"medium",cat:"Institutional Reforms",q:"______ is the price announced by the government before the sowing season to protect farmers.",a:"minimum support price",exp:"MSP (Minimum Support Price) shields farmers from price fluctuations."},
+  {id:"f005",d:"medium",cat:"Green Revolution",q:"The ______ Revolution refers to the increase in milk production in India.",a:"white",exp:"The White Revolution (Operation Flood) boosted milk production."},
+  {id:"f006",d:"easy",cat:"Wheat",q:"______ is the largest wheat-producing state in India.",a:"uttar pradesh",exp:"Uttar Pradesh leads wheat production, followed by Punjab and Haryana."},
+  {id:"f007",d:"medium",cat:"Cotton",q:"Cotton is the raw material for the ______ textile industry.",a:"cotton",exp:"Cotton is the basic raw material for the cotton textile industry."},
+  {id:"f008",d:"easy",cat:"Tea",q:"______ is the largest tea-producing state in India.",a:"assam",exp:"Assam produces the largest share of India's tea."},
+  {id:"f009",d:"medium",cat:"Rubber",q:"Rubber is mainly grown in Kerala, Tamil Nadu and the ______ Islands.",a:"andaman and nicobar",exp:"The Andaman & Nicobar Islands and Garo hills also grow rubber."},
+  {id:"f010",d:"hard",cat:"Institutional Reforms",q:"The first major land reform after independence was the abolition of the ______ system.",a:"zamindari",exp:"The Zamindari system was abolished to redistribute land ownership."},
+  {id:"f011",d:"easy",cat:"Pulses",q:"India is the world's largest producer as well as ______ of pulses.",a:"consumer",exp:"India both produces and consumes the most pulses in the world."},
+  {id:"f012",d:"medium",cat:"Sugarcane",q:"India is the world's second largest producer of sugarcane after ______.",a:"brazil",exp:"Brazil is the largest producer, India is second."},
+  {id:"f013",d:"easy",cat:"Rice",q:"Rice is mainly a crop of the ______ season.",a:"kharif",exp:"Rice is a Kharif crop requiring high temperature and humidity."},
+  {id:"f014",d:"medium",cat:"Millets",q:"Jowar, bajra and ragi are together known as ______ grains.",a:"coarse",exp:"These nutritious millets are called coarse grains."},
+  {id:"f015",d:"hard",cat:"Globalization",q:"______ stands for World Trade Organisation, which affects agricultural trade policy.",a:"wto",exp:"WTO agreements influence Indian farmers' choice of crops and trade rules."},
+  {id:"f016",d:"medium",cat:"Irrigation",q:"______ irrigation delivers water drop by drop directly to plant roots, saving water.",a:"drip",exp:"Drip irrigation minimises water wastage by targeting the root zone."},
+  {id:"f017",d:"medium",cat:"Institutional Reforms",q:"______ is the online platform (National Agriculture Market) that links mandis across India.",a:"e-nam",exp:"e-NAM connects APMC markets electronically for transparent price discovery."},
+  {id:"f018",d:"medium",cat:"Food Security",q:"The government maintains a ______ stock of food grains for distribution during shortages.",a:"buffer",exp:"Buffer stock is the reserve maintained mainly through the Food Corporation of India."},
+  {id:"f019",d:"easy",cat:"Soil",q:"______ soil, found in the Deccan Plateau, is best suited for cotton cultivation.",a:"black",exp:"Black (regur) soil retains moisture and suits cotton well."},
+  {id:"f020",d:"medium",cat:"Groundnut",q:"______ is the leading groundnut-producing state in India.",a:"gujarat",exp:"Gujarat leads groundnut production, along with Andhra Pradesh and Tamil Nadu."},
+  {id:"f021",d:"hard",cat:"Land Use",q:"______ ______ refers to the number of times land is cropped in one agricultural year.",a:"cropping intensity",exp:"Cropping intensity reflects how many crop cycles a field goes through annually."},
+  {id:"f022",d:"medium",cat:"Contract Farming",q:"______ farming is an arrangement where buyers and farmers agree on production terms before sowing.",a:"contract",exp:"Contract farming links farmers with agribusiness firms via pre-agreed terms."},
+  {id:"f023",d:"easy",cat:"Cropping Seasons",q:"Wheat, gram, and mustard are examples of ______ season crops.",a:"rabi",exp:"These are grown in winter and harvested in summer as Rabi crops."},
+  {id:"f024",d:"medium",cat:"Economy",q:"Agriculture is often called the ______ of the Indian economy.",a:"backbone",exp:"Agriculture supports rural livelihoods and feeds many allied industries."}
+];
+
+/* Match the Following pairs — grouped by relationship type */
+const MATCH_BANK = [
+  {
+    id:"g001", title:"Crop → Season",
+    pairs:[
+      {left:"Rice", right:"Kharif"},
+      {left:"Wheat", right:"Rabi"},
+      {left:"Watermelon", right:"Zaid"},
+      {left:"Mustard", right:"Rabi"},
+      {left:"Cotton", right:"Kharif"}
+    ]
+  },
+  {
+    id:"g002", title:"Crop → Leading State",
+    pairs:[
+      {left:"Tea", right:"Assam"},
+      {left:"Wheat", right:"Uttar Pradesh"},
+      {left:"Jute", right:"West Bengal"},
+      {left:"Ragi", right:"Karnataka"},
+      {left:"Rubber", right:"Kerala"}
+    ]
+  },
+  {
+    id:"g003", title:"Crop → Soil Type",
+    pairs:[
+      {left:"Cotton", right:"Black Soil"},
+      {left:"Jute", right:"Alluvial Soil (Flood Plains)"},
+      {left:"Tea", right:"Humus-rich Well-drained Soil"},
+      {left:"Bajra", right:"Sandy Soil"},
+      {left:"Rice", right:"Clayey / Alluvial Soil"}
+    ]
+  },
+  {
+    id:"g004", title:"Crop → Climate Need",
+    pairs:[
+      {left:"Rice", right:"High Temp. & High Humidity"},
+      {left:"Wheat", right:"Cool Growing Season"},
+      {left:"Rubber", right:"Hot & Humid, >200cm Rain"},
+      {left:"Cotton", right:"210 Frost-free Days"},
+      {left:"Coffee", right:"Warm Hill Climate"}
+    ]
+  },
+  {
+    id:"g005", title:"Term → Meaning",
+    pairs:[
+      {left:"Jhumming", right:"Shifting Cultivation"},
+      {left:"MSP", right:"Minimum Support Price"},
+      {left:"Golden Fibre", right:"Jute"},
+      {left:"White Revolution", right:"Milk Production Boost"},
+      {left:"Green Revolution", right:"HYV Seed-led Food Grain Boom"}
+    ]
+  },
+  {
+    id:"g006", title:"Reform → Purpose",
+    pairs:[
+      {left:"Zamindari Abolition", right:"End Intermediary Land Ownership"},
+      {left:"Consolidation of Holdings", right:"Combine Fragmented Plots"},
+      {left:"Kisan Credit Card", right:"Farm Input Loans"},
+      {left:"Crop Insurance", right:"Cover Losses from Calamities"},
+      {left:"e-NAM", right:"Online Market Linkage"}
+    ]
+  }
+];
+
+/* Image Identification — farming tools & irrigation methods (emoji-based,
+   see README for swapping in real photographs). */
+const TOOLS_BANK = [
+  {id:"tl001", emoji:"🪓", name:"Sickle", cat:"tool", clue:"Curved hand tool used for harvesting crops like wheat and rice"},
+  {id:"tl002", emoji:"🚜", name:"Tractor", cat:"tool", clue:"Mechanised vehicle used for ploughing, sowing and hauling on commercial farms"},
+  {id:"tl003", emoji:"🪃", name:"Plough", cat:"tool", clue:"Traditional implement pulled by bullocks or tractors to turn the soil"},
+  {id:"tl004", emoji:"🧑‍🌾", name:"Hoe", cat:"tool", clue:"Hand tool for weeding and loosening soil, common in primitive subsistence farming"},
+  {id:"tl005", emoji:"🌾", name:"Winnowing Fan", cat:"tool", clue:"Flat woven tool used to separate grain from chaff"},
+  {id:"tl006", emoji:"🚿", name:"Sprinkler", cat:"irrigation", clue:"Sprays water like rainfall — suited to uneven, sandy land"},
+  {id:"tl007", emoji:"💧", name:"Drip Irrigation", cat:"irrigation", clue:"Delivers water drop by drop directly to plant roots to save water"},
+  {id:"tl008", emoji:"🕳️", name:"Tube Well", cat:"irrigation", clue:"Bores deep underground to draw groundwater for irrigation"},
+  {id:"tl009", emoji:"🛶", name:"Canal", cat:"irrigation", clue:"Channel that carries river water to distant fields"},
+  {id:"tl010", emoji:"🪣", name:"Well", cat:"irrigation", clue:"Traditional dug source of groundwater, often paired with a pulley or motor"},
+  {id:"tl011", emoji:"🏞️", name:"Tank Irrigation", cat:"irrigation", clue:"Water stored in a small reservoir, common in the Deccan Plateau"},
+  {id:"tl012", emoji:"🌱", name:"Seed Drill", cat:"tool", clue:"Mechanised tool that sows seeds at a uniform depth and spacing"}
+];
+
+/* Map Challenge — a clickable state-grid (rather than an SVG geo-map, see
+   README) linking major crops to their leading producing states. */
+const STATE_BANK = [
+  {id:"mp001", crop:"Tea", correct:"Assam", options:["Assam","Punjab","Rajasthan","Kerala"], clue:"Along with Darjeeling & Jalpaiguri hills"},
+  {id:"mp002", crop:"Wheat", correct:"Uttar Pradesh", options:["Uttar Pradesh","Kerala","Odisha","Tamil Nadu"], clue:"India's largest wheat-producing state"},
+  {id:"mp003", crop:"Jute", correct:"West Bengal", options:["West Bengal","Gujarat","Punjab","Karnataka"], clue:"Golden Fibre grown in the Ganga delta"},
+  {id:"mp004", crop:"Rubber", correct:"Kerala", options:["Kerala","Haryana","Rajasthan","Bihar"], clue:"Warm, humid, more than 200cm rainfall"},
+  {id:"mp005", crop:"Groundnut", correct:"Gujarat", options:["Gujarat","Himachal Pradesh","Punjab","Assam"], clue:"India's leading oilseed-producing state"},
+  {id:"mp006", crop:"Ragi", correct:"Karnataka", options:["Karnataka","Punjab","Haryana","Uttarakhand"], clue:"Nutritious millet grown on red/black soils"},
+  {id:"mp007", crop:"Cotton", correct:"Gujarat", options:["Gujarat","West Bengal","Kerala","Assam"], clue:"Black soil, over 210 frost-free days"},
+  {id:"mp008", crop:"Coffee", correct:"Karnataka", options:["Karnataka","Punjab","Bihar","Odisha"], clue:"Nilgiri hills, Arabica variety"},
+  {id:"mp009", crop:"Rice (Rabi season)", correct:"West Bengal", options:["West Bengal","Rajasthan","Punjab","Haryana"], clue:"Grown with irrigation even outside Kharif season"},
+  {id:"mp010", crop:"Bajra", correct:"Rajasthan", options:["Rajasthan","Kerala","Assam","West Bengal"], clue:"Sandy soil, drought-tolerant millet"}
+];
+const INDIA_STATE_GRID = ["Punjab","Haryana","Rajasthan","Gujarat","Uttar Pradesh","Bihar","West Bengal","Assam","Odisha","Madhya Pradesh","Maharashtra","Karnataka","Kerala","Tamil Nadu","Andhra Pradesh","Himachal Pradesh","Uttarakhand"];
+
+/* Crop Detective — progressive clue reveal, hardest clue first isn't used;
+   clues run general → specific. */
+const CLUE_BANK = [
+  {id:"cd001", name:"Rice", clues:["I am a Kharif crop.","I need high temperature and high humidity to grow.","I need more than 100cm of rainfall, or irrigation where rainfall is low."]},
+  {id:"cd002", name:"Wheat", clues:["I am a Rabi crop.","I need a cool growing season.","I ripen best under bright sunshine — I'm India's second most important cereal."]},
+  {id:"cd003", name:"Cotton", clues:["I am a cash crop, not a food crop.","I grow best in black soil.","I need around 210 frost-free days and am the raw material for textile mills."]},
+  {id:"cd004", name:"Tea", clues:["I am a plantation crop.","I need a labour-intensive harvest, picked by hand.","Assam and the Darjeeling hills are my biggest home in India."]},
+  {id:"cd005", name:"Jute", clues:["I am called a 'fibre' crop.","I grow best on flood-plain soil renewed yearly.","People call me the Golden Fibre — West Bengal grows the most of me."]},
+  {id:"cd006", name:"Sugarcane", clues:["I am a tropical and sub-tropical crop.","I need hot, humid conditions and 75-100cm rainfall.","Sugar and gur are both made from me."]},
+  {id:"cd007", name:"Rubber", clues:["I originated as an equatorial crop.","I need over 200cm of rainfall a year.","Kerala and Tamil Nadu grow me for industrial raw material."]},
+  {id:"cd008", name:"Coffee", clues:["I am grown on hill plantations.","My Arabica variety is famous worldwide for quality.","The Nilgiri hills of Karnataka, Kerala and Tamil Nadu are my home."]},
+  {id:"cd009", name:"Groundnut", clues:["I am an oilseed, not a cereal.","I am mostly a Kharif season crop.","Gujarat leads my production in India."]},
+  {id:"cd010", name:"Millets", clues:["I am known as a coarse grain.","Jowar, bajra and ragi are all types of me.","I am highly nutritious and drought-resistant."]}
+];
+
+/* Crop / Image identification — uses emoji + clue text since no external
+   image assets are bundled (see README for swapping in real photos). */
+const CROP_BANK = [
+  {id:"c001", emoji:"🌾", name:"Rice", clue:"Kharif crop needing high humidity & temp above 25°C"},
+  {id:"c002", emoji:"🌿", name:"Wheat", clue:"Rabi crop, cool season, ripens under bright sun"},
+  {id:"c003", emoji:"🍵", name:"Tea", clue:"Plantation crop, Assam leads production"},
+  {id:"c004", emoji:"☕", name:"Coffee", clue:"Grown in Nilgiri hills, Arabica variety famous"},
+  {id:"c005", emoji:"🧵", name:"Cotton", clue:"Needs black soil & 210 frost-free days"},
+  {id:"c006", emoji:"🎋", name:"Sugarcane", clue:"Raw material for sugar & gur, tropical crop"},
+  {id:"c007", emoji:"🌻", name:"Millets", clue:"Jowar, bajra, ragi — the coarse grains"},
+  {id:"c008", emoji:"🧺", name:"Jute", clue:"The Golden Fibre, grown in flood plains"},
+  {id:"c009", emoji:"🌳", name:"Rubber", clue:"Equatorial crop, needs >200cm rainfall"},
+  {id:"c010", emoji:"🌽", name:"Maize", clue:"Food & fodder crop, 21-27°C, old alluvial soil"}
+];
+
+// Utility: shuffled full pool + fisher-yates
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+const QUESTION_COUNTS = {
+  mcq: MCQ_BANK.length,
+  tf: TF_BANK.length,
+  fill: FILL_BANK.length,
+  match: MATCH_BANK.reduce((s,g)=>s+g.pairs.length,0),
+  crop: CROP_BANK.length,
+  tools: TOOLS_BANK.length,
+  map: STATE_BANK.length,
+  detective: CLUE_BANK.length
+};
+QUESTION_COUNTS.total = QUESTION_COUNTS.mcq + QUESTION_COUNTS.tf + QUESTION_COUNTS.fill + QUESTION_COUNTS.match + QUESTION_COUNTS.crop + QUESTION_COUNTS.tools + QUESTION_COUNTS.map + QUESTION_COUNTS.detective;
+
+
+/* ============================= APPLICATION ENGINE ============================= */
+/* =========================================================================
+   AGRI-OPS :: FIELD COMMAND — application engine
+   ========================================================================= */
+
+/* ---------------- State & persistence ---------------- */
+const AVATAR_EMOJIS = ["🛡️","⚡","🔥","🌪️","🦅","🐺","🦁","🐉","⭐","🎯","🚀","🧭"];
+const DEFAULT_STATE = {
+  title: "AGRI-OPS: FIELD COMMAND",
+  teams: [
+    {id:"A", name:"Group A", color:"#00e5ff", score:0, correct:0, wrong:0, avatar:"🛡️"},
+    {id:"B", name:"Group B", color:"#39ff88", score:0, correct:0, wrong:0, avatar:"⚡"},
+    {id:"C", name:"Group C", color:"#ff8a1e", score:0, correct:0, wrong:0, avatar:"🔥"}
+  ],
+  settings:{
+    muted:false, musicOn:true, highContrast:false, lightMode:false, animationsOn:true,
+    rapidSeconds:180, battleSeconds:20, quizSeconds:15, roundsPerTeam:5,
+    musicVolume:.6, sfxVolume:.8, defaultQuestionCount:10, difficultyFilter:"all"
+  },
+  xp:0, level:1, bestStreak:0, totalCorrect:0, sinceMysteryBox:0,
+  achievements:[],
+  customQuestions:[],
+  leaderboard:[]
+};
+
+let STATE = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem("agriops_state_v1");
+    if(!raw) return structuredClone(DEFAULT_STATE);
+    const parsed = JSON.parse(raw);
+    const merged = Object.assign(structuredClone(DEFAULT_STATE), parsed);
+    merged.settings = Object.assign(structuredClone(DEFAULT_STATE.settings), parsed.settings||{});
+    merged.teams = (parsed.teams||DEFAULT_STATE.teams).map(t=>Object.assign({correct:0,wrong:0,avatar:"🛡️"},t));
+    return merged;
+  }catch(e){ return structuredClone(DEFAULT_STATE); }
+}
+function saveState(){
+  try{ localStorage.setItem("agriops_state_v1", JSON.stringify(STATE)); }
+  catch(e){ /* storage full or unavailable (e.g. private browsing) — fail silently, keep playing */ }
+}
+
+/* ---------------- Audio engine (procedural, no external files) ---------------- */
+const Audio_ = (function(){
+  let ctx=null, musicNodes=[], musicPlaying=false, musicTimer=null;
+  function getCtx(){ if(!ctx){ ctx = new (window.AudioContext||window.webkitAudioContext)(); } return ctx; }
+  function tone(freq,dur,type="sine",vol=.18,delay=0,isMusic=false){
+    if(STATE.settings.muted) return;
+    const mult = isMusic ? STATE.settings.musicVolume : STATE.settings.sfxVolume;
+    const finalVol = vol * (mult==null?1:mult);
+    if(finalVol<=0) return;
+    const c = getCtx();
+    const t0 = c.currentTime + delay;
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq,t0);
+    gain.gain.setValueAtTime(0,t0);
+    gain.gain.linearRampToValueAtTime(finalVol,t0+.02);
+    gain.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    osc.connect(gain).connect(c.destination);
+    osc.start(t0); osc.stop(t0+dur+.05);
+  }
+  return{
+    click:()=>tone(320,.06,"square",.12),
+    correct:()=>{tone(523,.12,"sine",.2);tone(784,.16,"sine",.18,.1);},
+    wrong:()=>{tone(160,.25,"sawtooth",.16);},
+    tick:()=>tone(880,.05,"square",.12),
+    warn:()=>tone(220,.12,"square",.18),
+    victory:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.35,"triangle",.22,i*.15));},
+    levelup:()=>{[440,554,659,880].forEach((f,i)=>tone(f,.25,"sine",.2,i*.09));},
+    startMusic(){
+      if(musicPlaying || STATE.settings.muted || !STATE.settings.musicOn) return;
+      musicPlaying = true;
+      const notes=[196,220,246.9,196,261.6,246.9,220,196];
+      let i=0;
+      musicTimer = setInterval(()=>{
+        if(STATE.settings.muted || !STATE.settings.musicOn) return;
+        tone(notes[i%notes.length]/2,.9,"sine",.15,0,true);
+        tone(notes[i%notes.length],.6,"triangle",.1,.15,true);
+        i++;
+      },900);
+    },
+    stopMusic(){ musicPlaying=false; clearInterval(musicTimer); }
+  };
+})();
+
+/* ---------------- DOM helpers ---------------- */
+const $ = (sel,ctx=document)=>ctx.querySelector(sel);
+const $$ = (sel,ctx=document)=>Array.from(ctx.querySelectorAll(sel));
+function el(tag,attrs={},children=[]){
+  const n = document.createElement(tag);
+  for(const k in attrs){
+    if(k==="class") n.className=attrs[k];
+    else if(k==="html") n.innerHTML=attrs[k];
+    else if(k.startsWith("on")) n.addEventListener(k.slice(2),attrs[k]);
+    else n.setAttribute(k,attrs[k]);
+  }
+  (Array.isArray(children)?children:[children]).forEach(c=>{
+    if(c==null) return;
+    n.appendChild(typeof c==="string"?document.createTextNode(c):c);
+  });
+  return n;
+}
+function toast(msg,ms=2600){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>t.classList.remove("show"),ms);
+}
+
+/* ---------------- View routing ---------------- */
+function showView(id){
+  $$(".view").forEach(v=>v.classList.remove("active"));
+  const target = $("#"+id);
+  target.classList.add("active");
+  $("#scoreboard-mini").classList.toggle("show", id!=="view-home");
+  if(id!=="view-game"){
+    setTheme(null);
+    if(activeRoundStop){ activeRoundStop(); activeRoundStop=null; }
+  }
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* Per-mode background theme — set right before entering view-game, cleared on any other view */
+function setTheme(modeId){
+  if(modeId) document.body.setAttribute("data-theme", modeId);
+  else document.body.removeAttribute("data-theme");
+}
+
+/* Timer-based rounds (Rapid Fire, Group Battle, Mega) register a stop callback here.
+   If the user navigates away mid-round (Home, Settings, Teacher, etc.) this cancels
+   the round's interval/timeouts so it can't keep running — and later score/scoring,
+   flip to the winner screen, or play sounds — in the background after they've left. */
+let activeRoundStop = null;
+
+/* ---------------- Scoreboard ---------------- */
+function renderMiniScoreboard(){
+  const box = $("#scoreboard-mini");
+  box.innerHTML="";
+  STATE.teams.forEach(t=>{
+    box.appendChild(el("div",{class:"score-chip"},[
+      t.name+": ", el("b",{},String(t.score))
+    ]));
+  });
+}
+function addScore(teamId, pts){
+  const team = STATE.teams.find(t=>t.id===teamId);
+  if(!team) return;
+  team.score += pts;
+  STATE.xp += Math.max(pts,0);
+  const newLevel = Math.floor(STATE.xp/100)+1;
+  if(newLevel>STATE.level){ STATE.level=newLevel; Audio_.levelup(); toast(`⬆ LEVEL UP! Level ${STATE.level}`); }
+  saveState();
+  renderMiniScoreboard();
+}
+
+/* ---------------- Teams page ---------------- */
+function renderTeams(){
+  const grid = $("#team-grid");
+  grid.innerHTML="";
+  const ranked = [...STATE.teams].sort((a,b)=>b.score-a.score);
+  STATE.teams.forEach(t=>{
+    const rank = ranked.findIndex(x=>x.id===t.id)+1;
+    const total = t.correct+t.wrong;
+    const acc = total? Math.round((t.correct/total)*100) : 0;
+    const card = el("div",{class:"panel team-card"},[
+      el("div",{class:"team-colorbar",style:`background:${t.color}`}),
+      el("div",{class:"flex-between"},[
+        el("div",{class:"name"},[`#${rank} `, el("button",{class:"iconbtn",style:"width:28px;height:28px;font-size:.9rem;",title:"Change avatar",onclick:()=>cycleAvatar(t.id)},t.avatar), " "+t.name]),
+      ]),
+      el("div",{class:"pts mono"},String(t.score)),
+      el("div",{class:"mono",style:"font-size:.75rem;color:var(--muted)"}, `✔ ${t.correct}  ✘ ${t.wrong}  · ${acc}% accuracy`),
+      el("div",{class:"row"},[
+        el("button",{class:"btn ghost sm",onclick:()=>renameTeam(t.id)},"Rename"),
+        el("button",{class:"btn ghost sm",onclick:()=>{if(STATE.teams.length>1){STATE.teams=STATE.teams.filter(x=>x.id!==t.id);saveState();renderTeams();renderMiniScoreboard();toast("Team removed");}else{toast("At least one team is required");}}},"Delete")
+      ])
+    ]);
+    grid.appendChild(card);
+  });
+}
+function cycleAvatar(id){
+  const t = STATE.teams.find(x=>x.id===id);
+  const i = AVATAR_EMOJIS.indexOf(t.avatar);
+  t.avatar = AVATAR_EMOJIS[(i+1)%AVATAR_EMOJIS.length];
+  saveState(); renderTeams();
+}
+function renameTeam(id){
+  const t = STATE.teams.find(x=>x.id===id);
+  const name = prompt("New team name:", t.name);
+  if(name && name.trim()){ t.name=name.trim(); saveState(); renderTeams(); renderMiniScoreboard(); }
+}
+function addTeam(){
+  const name = $("#new-team-name").value.trim();
+  if(!name){ toast("Enter a team name first"); return; }
+  const colors=["#00e5ff","#39ff88","#ff8a1e","#ff2d55","#c77dff","#ffe066","#5ee7ff","#7bff9c"];
+  const id = "T"+Date.now();
+  STATE.teams.push({id,name,color:colors[STATE.teams.length%colors.length],score:0,correct:0,wrong:0,avatar:AVATAR_EMOJIS[STATE.teams.length%AVATAR_EMOJIS.length]});
+  $("#new-team-name").value="";
+  saveState(); renderTeams(); renderMiniScoreboard();
+  Audio_.click();
+}
+function resetAllScores(){
+  STATE.teams.forEach(t=>{t.score=0;t.correct=0;t.wrong=0;});
+  saveState(); renderTeams(); renderMiniScoreboard();
+  toast("All scores reset to zero");
+}
+
+/* ---------------- Question pool helpers ---------------- */
+function allMcq(){ return MCQ_BANK.concat(STATE.customQuestions||[]); }
+function applyDifficulty(arr){
+  const f = STATE.settings.difficultyFilter;
+  if(!f || f==="all") return arr;
+  const filtered = arr.filter(q=>q.d===f);
+  return filtered.length ? filtered : arr; // fall back if a bank has none of that difficulty
+}
+function pickN(arr,n){ return shuffleArray(applyDifficulty(arr)).slice(0,Math.min(n,arr.length)); }
+
+/* ---------------- Mode metadata ---------------- */
+const MODES = [
+  {id:"rapid", icon:"🎯", name:"Rapid Fire Round", tag:"3-MIN SOLO", desc:"Beat the clock. Answer as many questions as you can before time runs out. +10 per hit."},
+  {id:"battle", icon:"⚔️", name:"Group Battle", tag:"TEAM VS TEAM", desc:"Teams take turns under a 20s shot clock. Miss and the turn passes to the next squad."},
+  {id:"match", icon:"🔗", name:"Match the Following", tag:"LINK & SCORE", desc:"Pair crops with their season, state, soil or climate before the board clears."},
+  {id:"tf", icon:"✅", name:"True or False", tag:"QUICKFIRE", desc:"Ten statements. Call it right or wrong, fast."},
+  {id:"crop", icon:"🌾", name:"Guess the Crop", tag:"IMAGE ID", desc:"Identify the crop from its icon and field clue."},
+  {id:"image", icon:"🚜", name:"Image Identification", tag:"TOOLS & IRRIGATION", desc:"Recognise farming tools and irrigation methods from icon + clue."},
+  {id:"fill", icon:"⌨️", name:"Fill in the Blanks", tag:"RECALL", desc:"Type the missing term to complete the briefing."},
+  {id:"mcq", icon:"🧠", name:"Multiple Choice Quiz", tag:"CLASSIC", desc:"Straight MCQ gauntlet across easy, medium and hard intel."},
+  {id:"mapchallenge", icon:"🗺️", name:"Map Challenge", tag:"STATE GRID", desc:"Tap the Indian state that leads production of the named crop."},
+  {id:"detective", icon:"🕵️", name:"Crop Detective", tag:"3 CLUES", desc:"Guess the crop from three progressively specific clues — fewer clues, more points."},
+  {id:"mega", icon:"🏆", name:"Farming Championship", tag:"MIXED FINAL", desc:"A mixed gauntlet of every question type — the chapter's full test."},
+  {id:"wheel", icon:"🎡", name:"Spin the Wheel", tag:"RANDOM CATEGORY", desc:"Spin to land on a topic, then answer a short quiz from that category only."},
+  {id:"harvest", icon:"🧺", name:"Harvest Hunt", tag:"COLLECT CROPS", desc:"Every correct answer adds a crop to your basket. Fill it before time's up."},
+  {id:"survival", icon:"💀", name:"Survival Mode", tag:"ONE LIFE", desc:"Answer until your first mistake. One slip ends the run — how far can you go?"},
+  {id:"boss", icon:"👑", name:"Final Boss Round", tag:"HARDEST · 2x PTS", desc:"Only hard-difficulty questions, double points, one life. The ultimate test."}
+];
+
+function renderModes(){
+  const grid = $("#mode-grid");
+  grid.innerHTML="";
+  MODES.forEach(m=>{
+    grid.appendChild(el("div",{class:"panel mode-card",tabindex:"0",role:"button",
+      onclick:()=>openPreGame(m.id),
+      onkeydown:(e)=>{if(e.key==="Enter")openPreGame(m.id);}},[
+      el("div",{class:"icon"},m.icon),
+      el("h3",{},m.name),
+      el("p",{},m.desc),
+      el("span",{class:"tag"},m.tag)
+    ]));
+  });
+}
+
+/* ---------------- Pre-game team select ---------------- */
+let activeTeamId = STATE.teams[0] ? STATE.teams[0].id : null;
+function openPreGame(modeId){
+  Audio_.click();
+  const mode = MODES.find(m=>m.id===modeId);
+  const mount = $("#pregame-mount");
+  mount.innerHTML="";
+  if(modeId==="battle"){
+    if(STATE.teams.length<2){ toast("Group Battle needs at least 2 teams — add one on the Teams page."); return; }
+    mount.appendChild(el("p",{},`All ${STATE.teams.length} teams will play in rotation, ${STATE.settings.roundsPerTeam} question(s) per team per round.`));
+    mount.appendChild(el("div",{class:"btn-row",style:"margin-top:1.5rem;"},[
+      el("button",{class:"btn primary",onclick:()=>{setTheme("battle");showView("view-game");runBattle();}},"▶ Start Battle"),
+      el("button",{class:"btn ghost",onclick:()=>showView("view-home")},"Cancel")
+    ]));
+  }else{
+    const select = el("select",{class:"field",id:"pg-team-select"});
+    STATE.teams.forEach(t=>select.appendChild(el("option",{value:t.id},t.name)));
+    select.value = activeTeamId;
+    mount.appendChild(el("label",{},["Playing as: ", select]));
+    mount.appendChild(el("div",{class:"btn-row",style:"margin-top:1.5rem;"},[
+      el("button",{class:"btn primary",onclick:()=>{
+        activeTeamId = select.value;
+        setTheme(modeId);
+        showView("view-game");
+        launchMode(modeId);
+      }},"▶ Start Mission"),
+      el("button",{class:"btn ghost",onclick:()=>showView("view-home")},"Cancel")
+    ]));
+  }
+  $("#pregame-title").textContent = mode.name;
+  showView("view-pregame");
+}
+function launchMode(modeId){
+  Audio_.startMusic();
+  ({
+    rapid: runRapidFire, match: runMatch, tf: ()=>runStraightQuiz("tf"),
+    crop: runCropId, fill: ()=>runStraightQuiz("fill"), mcq: ()=>runStraightQuiz("mcq"),
+    puzzle: runPuzzle, mega: runMega,
+    image: runImageID, mapchallenge: runMapChallenge, detective: runCropDetective,
+    wheel: runSpinWheel, harvest: runHarvestHunt, survival: runSurvival, boss: runFinalBoss
+  })[modeId]();
+}
+
+/* ---------------- Session tracking (streak/xp) ---------------- */
+let sessionStreak = 0;
+function registerAnswer(correct, teamId, points){
+  const team = STATE.teams.find(t=>t.id===teamId);
+  if(correct){
+    sessionStreak++;
+    STATE.totalCorrect++;
+    STATE.sinceMysteryBox++;
+    if(team) team.correct++;
+    if(sessionStreak>STATE.bestStreak) STATE.bestStreak=sessionStreak;
+    let bonus = sessionStreak>=3 ? Math.min(5*(sessionStreak-2),20) : 0;
+    addScore(teamId, points+bonus);
+    if(bonus>0) toast(`🔥 Combo x${sessionStreak}! +${bonus} bonus`);
+    Audio_.correct();
+    checkAchievements();
+    if(STATE.sinceMysteryBox>=4){
+      STATE.sinceMysteryBox=0;
+      setTimeout(()=>openMysteryBox(teamId),350);
+    }
+  }else{
+    sessionStreak = 0;
+    if(team) team.wrong++;
+    addScore(teamId, 0);
+    Audio_.wrong();
+  }
+  saveState();
+}
+
+/* ---------------- Mystery Box ---------------- */
+function openMysteryBox(teamId){
+  const backdrop = $("#mystery-backdrop");
+  const box = $("#mystery-box-content");
+  box.innerHTML="";
+  box.appendChild(el("h3",{},"🎁 MYSTERY BOX"));
+  box.appendChild(el("p",{style:"color:var(--muted);margin-bottom:1rem"},"Four correct answers! Pick a crate:"));
+  const row = el("div",{class:"btn-row",style:"justify-content:center;"});
+  const rewards = [
+    ()=>{ addScore(teamId,15); toast("📦 +15 bonus points!"); },
+    ()=>{ addScore(teamId,25); toast("📦 Jackpot! +25 bonus points!"); },
+    ()=>{ addScore(teamId,5); toast("📦 A small crate: +5 points."); }
+  ];
+  ["🎁","📦","🧰"].forEach((icon,i)=>{
+    row.appendChild(el("button",{class:"btn orange",onclick:()=>{ rewards[i](); backdrop.classList.remove("show"); }},icon));
+  });
+  box.appendChild(row);
+  backdrop.classList.add("show");
+}
+const ACHIEVEMENTS = [
+  {id:"first_blood", label:"🩸 First Blood — first correct answer", test:()=>STATE.totalCorrect>=1},
+  {id:"sharp5", label:"🎯 Sharpshooter — 5-answer streak", test:()=>STATE.bestStreak>=5},
+  {id:"century", label:"💯 Century — 100 correct answers lifetime", test:()=>STATE.totalCorrect>=100},
+  {id:"level5", label:"⭐ Field Veteran — reached Level 5", test:()=>STATE.level>=5}
+];
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!STATE.achievements.includes(a.id) && a.test()){
+      STATE.achievements.push(a.id);
+      toast("🏅 Achievement unlocked: "+a.label);
+    }
+  });
+}
+
+/* ---------------- Generic quiz card renderer ---------------- */
+function renderQImage(q){
+  if(!q.img) return el("div",{});
+  return el("img",{src:q.img,style:"max-width:100%;max-height:220px;border-radius:4px;margin-bottom:1rem;border:1px solid var(--border);"});
+}
+function questionMeta(q){
+  return el("div",{class:"qmeta"},[
+    el("span",{class:"pill "+(q.d||"medium")},q.d||"medium"),
+    el("span",{class:"pill"},q.cat||"General")
+  ]);
+}
+function flashFeedback(correct){
+  const f = $("#feedback-flash");
+  f.className = "feedback-flash "+(correct?"correct":"wrong");
+  void f.offsetWidth;
+  setTimeout(()=>f.className="feedback-flash",500);
+}
+
+/* ---------------- MODE: Rapid Fire ---------------- */
+function runRapidFire(){
+  const mount = $("#game-mount");
+  let pool = shuffleArray(allMcq().concat(
+    TF_BANK.map(q=>({...q,qtype:"tf"})),
+    FILL_BANK.map(q=>({...q,qtype:"fill"}))
+  ));
+  let idx=0, correctCount=0, total=0, timeLeft=STATE.settings.rapidSeconds, running=true;
+  sessionStreak=0;
+
+  function frame(){
+    mount.innerHTML="";
+    mount.appendChild(el("div",{class:"game-hud"},[
+      el("div",{},[
+        el("div",{class:"eyebrow mono"},"MISSION: RAPID FIRE"),
+        el("div",{class:"timer-display "+(timeLeft<=30?"warn":""),id:"rf-timer"},fmtTime(timeLeft))
+      ]),
+      el("div",{style:"text-align:right"},[
+        el("div",{class:"mono",style:"color:var(--muted)"},`Hits: ${correctCount} / ${total}`),
+        el("button",{class:"btn danger sm",onclick:endEarly},"⏹ End Early")
+      ])
+    ]));
+    renderQ();
+  }
+  function renderQ(){
+    const old = $("#rf-qcard"); if(old) old.remove();
+    if(idx>=pool.length){ idx=0; } // recycle if exhausted (never repeat until all used, per spec)
+    const q = pool[idx];
+    const card = el("div",{class:"panel qcard",id:"rf-qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    card.appendChild(renderAnswerArea(q, (correct)=>{
+      total++; if(correct) correctCount++;
+      registerAnswer(correct, activeTeamId, correct?10:0);
+      flashFeedback(correct);
+      idx++;
+      if(running) renderQ();
+    }));
+    mount.appendChild(card);
+  }
+  function fmtTime(s){ const m=Math.floor(s/60); const ss=String(s%60).padStart(2,"0"); return `${m}:${ss}`; }
+  const timer = setInterval(()=>{
+    timeLeft--;
+    const disp = $("#rf-timer");
+    if(disp){ disp.textContent = fmtTime(timeLeft); disp.className="timer-display "+(timeLeft<=30?"warn":""); }
+    if(timeLeft<=10 && timeLeft>0) Audio_.warn();
+    if(timeLeft<=0){ finish(); }
+  },1000);
+  activeRoundStop = ()=>{ running=false; clearInterval(timer); };
+  function endEarly(){ finish(); }
+  function finish(){
+    if(!running) return;
+    running=false; clearInterval(timer);
+    activeRoundStop=null;
+    showRoundSummary("Rapid Fire Round", correctCount, total);
+  }
+  frame();
+}
+
+/* ---------------- MODE: straight quiz (tf / fill / mcq) ---------------- */
+function runStraightQuiz(type){
+  const mount = $("#game-mount");
+  const n = STATE.settings.defaultQuestionCount || 10;
+  let pool;
+  if(type==="tf") pool = pickN(TF_BANK,n).map(q=>({...q,qtype:"tf"}));
+  else if(type==="fill") pool = pickN(FILL_BANK,n).map(q=>({...q,qtype:"fill"}));
+  else pool = pickN(allMcq(),n).map(q=>({...q,qtype:"mcq"}));
+  let idx=0, correctCount=0;
+  sessionStreak=0;
+  const labels={tf:"TRUE OR FALSE",fill:"FILL IN THE BLANKS",mcq:"MULTIPLE CHOICE QUIZ"};
+  function renderQ(){
+    mount.innerHTML="";
+    const q = pool[idx];
+    mount.appendChild(el("div",{class:"game-hud"},[
+      el("div",{class:"eyebrow mono"},`${labels[type]} — Q${idx+1}/${pool.length}`),
+      el("div",{style:"text-align:right"},[el("div",{class:"mono",style:"color:var(--muted)"},`Score: ${correctCount}✔`)])
+    ]));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    card.appendChild(renderAnswerArea(q,(correct)=>{
+      if(correct) correctCount++;
+      registerAnswer(correct, activeTeamId, correct?10:0);
+      flashFeedback(correct);
+      idx++;
+      if(idx<pool.length) setTimeout(renderQ,650);
+      else setTimeout(()=>showRoundSummary(labels[type], correctCount, pool.length),650);
+    }));
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- Answer area renderer (shared) ---------------- */
+function renderAnswerArea(q, onDone){
+  const wrap = el("div",{});
+  let answered=false;
+  if(q.qtype==="tf"){
+    const grid = el("div",{class:"tf-grid"});
+    const mk = (val,label,cls)=> el("button",{class:"btn opt-btn tf-btn "+cls,onclick:(e)=>{
+      if(answered) return; answered=true;
+      const correct = (val===q.a);
+      e.target.classList.add(correct?"correct":"wrong");
+      onDone(correct);
+    }},label);
+    grid.appendChild(mk(true,"TRUE","true"));
+    grid.appendChild(mk(false,"FALSE","false"));
+    wrap.appendChild(grid);
+  }else if(q.qtype==="fill"){
+    const row = el("div",{class:"fill-wrap"});
+    const input = el("input",{class:"field",type:"text",placeholder:"Type your answer...",autocomplete:"off"});
+    const submit = ()=>{
+      if(answered) return; answered=true;
+      const correct = input.value.trim().toLowerCase()===String(q.a).toLowerCase();
+      input.style.borderColor = correct?"var(--green)":"var(--danger)";
+      onDone(correct);
+    };
+    input.addEventListener("keydown",(e)=>{if(e.key==="Enter") submit();});
+    row.appendChild(input);
+    row.appendChild(el("button",{class:"btn primary",onclick:submit},"Submit"));
+    wrap.appendChild(row);
+  }else{ // mcq
+    const grid = el("div",{class:"options-grid"});
+    q.opts.forEach((opt,i)=>{
+      grid.appendChild(el("button",{class:"btn opt-btn",onclick:(e)=>{
+        if(answered) return; answered=true;
+        const correct = i===q.a;
+        e.currentTarget.classList.add(correct?"correct":"wrong");
+        if(!correct){
+          $$(".opt-btn",grid)[q.a].classList.add("correct");
+        }
+        $$(".opt-btn",grid).forEach(b=>b.disabled=true);
+        onDone(correct);
+      }}, `${String.fromCharCode(65+i)}.  ${opt}`));
+    });
+    wrap.appendChild(grid);
+  }
+  return wrap;
+}
+
+/* ---------------- MODE: Guess the Crop ---------------- */
+function runCropId(){
+  const mount = $("#game-mount");
+  let pool = shuffleArray(CROP_BANK);
+  let idx=0, correctCount=0;
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    const q = pool[idx];
+    const wrongNames = shuffleArray(CROP_BANK.filter(c=>c.name!==q.name)).slice(0,3).map(c=>c.name);
+    const options = shuffleArray([q.name,...wrongNames]);
+    mount.appendChild(el("div",{class:"eyebrow mono"},`IMAGE IDENTIFICATION — Q${idx+1}/${pool.length}`));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(el("div",{class:"crop-display"}, q.emoji));
+    card.appendChild(el("div",{class:"crop-clue"}, q.clue));
+    const grid = el("div",{class:"options-grid"});
+    let answered=false;
+    options.forEach(name=>{
+      grid.appendChild(el("button",{class:"btn opt-btn",onclick:(e)=>{
+        if(answered) return; answered=true;
+        const correct = name===q.name;
+        e.currentTarget.classList.add(correct?"correct":"wrong");
+        if(!correct){ $$(".opt-btn",grid).forEach(b=>{ if(b.textContent.trim()===q.name) b.classList.add("correct"); }); }
+        $$(".opt-btn",grid).forEach(b=>b.disabled=true);
+        if(correct) correctCount++;
+        registerAnswer(correct, activeTeamId, correct?10:0);
+        flashFeedback(correct);
+        idx++;
+        setTimeout(()=>{ idx<pool.length ? renderQ() : showRoundSummary("Guess the Crop", correctCount, pool.length); },700);
+      }}, name));
+    });
+    card.appendChild(grid);
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Match the Following ---------------- */
+function runMatch(){
+  const mount = $("#game-mount");
+  const group = MATCH_BANK[Math.floor(Math.random()*MATCH_BANK.length)];
+  const lefts = shuffleArray(group.pairs.map((p,i)=>({...p,idx:i})));
+  const rights = shuffleArray(group.pairs.map((p,i)=>({...p,idx:i})));
+  let selectedLeft=null, matchedCount=0;
+  mount.innerHTML="";
+  mount.appendChild(el("div",{class:"eyebrow mono"},`MATCH THE FOLLOWING — ${group.title}`));
+  const wrap = el("div",{class:"panel match-wrap"});
+  const colL = el("div",{class:"match-col"},[el("h4",{},"Crop / Term")]);
+  const colR = el("div",{class:"match-col"},[el("h4",{},"Match")]);
+  lefts.forEach(p=>{
+    const item = el("div",{class:"match-item",tabindex:"0","data-idx":p.idx,onclick:function(){
+      if(this.classList.contains("matched")) return;
+      $$(".match-item",colL).forEach(x=>x.classList.remove("selected"));
+      this.classList.add("selected");
+      selectedLeft = this;
+    }}, p.left);
+    colL.appendChild(item);
+  });
+  rights.forEach(p=>{
+    const item = el("div",{class:"match-item",tabindex:"0","data-idx":p.idx,onclick:function(){
+      if(this.classList.contains("matched") || !selectedLeft) return;
+      const li = Number(selectedLeft.dataset.idx), ri = Number(this.dataset.idx);
+      if(li===ri){
+        selectedLeft.classList.remove("selected");
+        selectedLeft.classList.add("matched");
+        this.classList.add("matched");
+        matchedCount++;
+        registerAnswer(true, activeTeamId, 10);
+        flashFeedback(true);
+        selectedLeft=null;
+        if(matchedCount===group.pairs.length){
+          setTimeout(()=>showRoundSummary("Match the Following", matchedCount, group.pairs.length),500);
+        }
+      }else{
+        this.classList.add("wrong-flash");
+        selectedLeft.classList.add("wrong-flash");
+        Audio_.wrong(); flashFeedback(false);
+        registerAnswer(false, activeTeamId, 0);
+        setTimeout(()=>{ this.classList.remove("wrong-flash"); if(selectedLeft) selectedLeft.classList.remove("wrong-flash","selected"); selectedLeft=null; },400);
+      }
+    }}, p.right);
+    colR.appendChild(item);
+  });
+  wrap.appendChild(colL); wrap.appendChild(colR);
+  mount.appendChild(wrap);
+}
+
+/* ---------------- MODE: Puzzle Challenge (word scramble) ---------------- */
+const PUZZLE_TERMS = ["JHUMMING","PLANTATION","MONSOON","IRRIGATION","GROUNDNUT","SUGARCANE","HORTICULTURE","ZAMINDARI","LEGUMINOUS","SUBSISTENCE"];
+function scramble(word){
+  let a = word.split("");
+  do{ a = shuffleArray(a); } while(a.join("")===word && word.length>1);
+  return a.join("");
+}
+function runPuzzle(){
+  const mount = $("#game-mount");
+  const terms = pickN(PUZZLE_TERMS,6);
+  let idx=0, correctCount=0;
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    const word = terms[idx];
+    mount.appendChild(el("div",{class:"eyebrow mono"},`PUZZLE CHALLENGE — Q${idx+1}/${terms.length}`));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(el("div",{class:"qtext mono",style:"letter-spacing:.3em;font-size:1.8rem;color:var(--orange)"}, scramble(word)));
+    card.appendChild(el("p",{style:"color:var(--muted);margin-bottom:1rem"},"Unscramble this Agriculture-chapter term"));
+    const row = el("div",{class:"fill-wrap"});
+    const input = el("input",{class:"field",type:"text",placeholder:"Type the unscrambled word...",autocomplete:"off"});
+    let answered=false;
+    const submit=()=>{
+      if(answered) return; answered=true;
+      const correct = input.value.trim().toUpperCase()===word;
+      input.style.borderColor = correct?"var(--green)":"var(--danger)";
+      if(!correct) toast("Answer: "+word);
+      if(correct) correctCount++;
+      registerAnswer(correct, activeTeamId, correct?15:0);
+      flashFeedback(correct);
+      idx++;
+      setTimeout(()=>{ idx<terms.length ? renderQ() : showRoundSummary("Puzzle Challenge", correctCount, terms.length); },900);
+    };
+    input.addEventListener("keydown",(e)=>{if(e.key==="Enter") submit();});
+    row.appendChild(input);
+    row.appendChild(el("button",{class:"btn primary",onclick:submit},"Submit"));
+    card.appendChild(row);
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Group Battle ---------------- */
+function runBattle(){
+  const mount = $("#game-mount");
+  const teams = STATE.teams;
+  const totalTurns = teams.length * STATE.settings.roundsPerTeam;
+  let pool = shuffleArray(allMcq());
+  let turn=0, qi=0, timeLeft=STATE.settings.battleSeconds, timer=null, stopped=false;
+  activeRoundStop = ()=>{ stopped=true; clearInterval(timer); };
+  function currentTeam(){ return teams[turn % teams.length]; }
+  function renderQ(){
+    if(stopped) return;
+    clearInterval(timer);
+    if(qi>=pool.length) qi=0;
+    const q = pool[qi];
+    timeLeft = STATE.settings.battleSeconds;
+    mount.innerHTML="";
+    mount.appendChild(el("div",{class:"turn-banner"}, `TURN ${turn+1}/${totalTurns} — ${currentTeam().name}'S SHOT`));
+    mount.appendChild(el("div",{class:"game-hud"},[
+      el("div",{},[el("div",{class:"eyebrow mono"},"GROUP BATTLE"), el("div",{class:"timer-display",id:"gb-timer"},String(timeLeft))]),
+      el("div",{},STATE.teams.map(t=>el("div",{class:"mono",style:`color:${t.color};font-size:.8rem`},`${t.name}: ${t.score}`)))
+    ]));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    let answered=false;
+    const grid = el("div",{class:"options-grid"});
+    q.opts.forEach((opt,i)=>{
+      grid.appendChild(el("button",{class:"btn opt-btn",onclick:(e)=>{
+        if(answered) return; answered=true; clearInterval(timer);
+        const correct = i===q.a;
+        e.currentTarget.classList.add(correct?"correct":"wrong");
+        if(!correct) $$(".opt-btn",grid)[q.a].classList.add("correct");
+        $$(".opt-btn",grid).forEach(b=>b.disabled=true);
+        registerAnswer(correct, currentTeam().id, correct?10:0);
+        flashFeedback(correct);
+        advance();
+      }}, `${String.fromCharCode(65+i)}.  ${opt}`));
+    });
+    card.appendChild(grid);
+    mount.appendChild(card);
+    timer = setInterval(()=>{
+      timeLeft--;
+      const d = $("#gb-timer"); if(d) d.textContent=String(timeLeft);
+      if(timeLeft<=5 && timeLeft>0) Audio_.warn();
+      if(timeLeft<=0 && !answered){
+        answered=true; clearInterval(timer);
+        toast(currentTeam().name+" ran out of time!");
+        advance();
+      }
+    },1000);
+  }
+  function advance(){
+    if(stopped) return;
+    turn++; qi++;
+    if(turn>=totalTurns){
+      setTimeout(()=>{ if(!stopped) finishBattle(); },700);
+    }else{
+      setTimeout(()=>{ if(!stopped) renderQ(); },700);
+    }
+  }
+  function finishBattle(){
+    activeRoundStop=null;
+    logLeaderboard("Group Battle");
+    showEndScreen();
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Final Mega Challenge ---------------- */
+function runMega(){
+  const mount = $("#game-mount");
+  let pool = shuffleArray([
+    ...pickN(allMcq(),5).map(q=>({...q,qtype:"mcq"})),
+    ...pickN(TF_BANK,3).map(q=>({...q,qtype:"tf"})),
+    ...pickN(FILL_BANK,2).map(q=>({...q,qtype:"fill"}))
+  ]);
+  let idx=0, correctCount=0, timeLeft=STATE.settings.quizSeconds, timer=null, stopped=false;
+  activeRoundStop = ()=>{ stopped=true; clearInterval(timer); };
+  sessionStreak=0;
+  function renderQ(){
+    if(stopped) return;
+    clearInterval(timer);
+    timeLeft=STATE.settings.quizSeconds;
+    mount.innerHTML="";
+    const q = pool[idx];
+    mount.appendChild(el("div",{class:"turn-banner"},"👑 FINAL MEGA CHALLENGE — DOUBLE POINTS"));
+    mount.appendChild(el("div",{class:"game-hud"},[
+      el("div",{class:"eyebrow mono"},`Q${idx+1}/${pool.length}`),
+      el("div",{class:"timer-display",id:"mega-timer"},String(timeLeft))
+    ]));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    let answered=false;
+    card.appendChild(renderAnswerArea(q,(correct)=>{
+      if(answered) return; answered=true; clearInterval(timer);
+      if(correct) correctCount++;
+      registerAnswer(correct, activeTeamId, correct?20:0);
+      flashFeedback(correct);
+      idx++;
+      setTimeout(()=>{ if(stopped) return; idx<pool.length ? renderQ() : finishMega(); },700);
+    }));
+    mount.appendChild(card);
+    timer = setInterval(()=>{
+      timeLeft--;
+      const d = $("#mega-timer"); if(d) d.textContent=String(timeLeft);
+      if(timeLeft<=5 && timeLeft>0) Audio_.warn();
+      if(timeLeft<=0 && !answered){
+        answered=true; clearInterval(timer);
+        registerAnswer(false, activeTeamId, 0);
+        idx++;
+        setTimeout(()=>{ if(stopped) return; idx<pool.length ? renderQ() : finishMega(); },500);
+      }
+    },1000);
+  }
+  function finishMega(){
+    activeRoundStop=null;
+    logLeaderboard("Final Mega Challenge");
+    showEndScreen();
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Image Identification (tools & irrigation) ---------------- */
+function runImageID(){
+  const mount = $("#game-mount");
+  let pool = shuffleArray(TOOLS_BANK);
+  let idx=0, correctCount=0;
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    const q = pool[idx];
+    const wrongNames = shuffleArray(TOOLS_BANK.filter(c=>c.name!==q.name)).slice(0,3).map(c=>c.name);
+    const options = shuffleArray([q.name,...wrongNames]);
+    mount.appendChild(el("div",{class:"eyebrow mono"},`IMAGE IDENTIFICATION — Q${idx+1}/${pool.length} (${q.cat==="tool"?"Farming Tool":"Irrigation Method"})`));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(el("div",{class:"crop-display"}, q.emoji));
+    card.appendChild(el("div",{class:"crop-clue"}, q.clue));
+    const grid = el("div",{class:"options-grid"});
+    let answered=false;
+    options.forEach(name=>{
+      grid.appendChild(el("button",{class:"btn opt-btn",onclick:(e)=>{
+        if(answered) return; answered=true;
+        const correct = name===q.name;
+        e.currentTarget.classList.add(correct?"correct":"wrong");
+        if(!correct){ $$(".opt-btn",grid).forEach(b=>{ if(b.textContent.trim()===q.name) b.classList.add("correct"); }); }
+        $$(".opt-btn",grid).forEach(b=>b.disabled=true);
+        if(correct) correctCount++;
+        registerAnswer(correct, activeTeamId, correct?10:0);
+        flashFeedback(correct);
+        idx++;
+        setTimeout(()=>{ idx<pool.length ? renderQ() : showRoundSummary("Image Identification", correctCount, pool.length); },700);
+      }}, name));
+    });
+    card.appendChild(grid);
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Map Challenge (state grid) ---------------- */
+function runMapChallenge(){
+  const mount = $("#game-mount");
+  let pool = shuffleArray(STATE_BANK);
+  let idx=0, correctCount=0;
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    const q = pool[idx];
+    mount.appendChild(el("div",{class:"eyebrow mono"},`MAP CHALLENGE — Q${idx+1}/${pool.length}`));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(el("div",{class:"qtext"}, `Which state is the leading producer of ${q.crop}?`));
+    card.appendChild(el("div",{class:"crop-clue"}, q.clue));
+    const grid = el("div",{class:"options-grid",style:"grid-template-columns:repeat(auto-fit,minmax(140px,1fr));"});
+    let answered=false;
+    const displayStates = shuffleArray(Array.from(new Set([...q.options, ...pickN(INDIA_STATE_GRID.filter(s=>!q.options.includes(s)),Math.max(0,8-q.options.length))])));
+    displayStates.forEach(state=>{
+      grid.appendChild(el("button",{class:"btn opt-btn sm",onclick:(e)=>{
+        if(answered) return; answered=true;
+        const correct = state===q.correct;
+        e.currentTarget.classList.add(correct?"correct":"wrong");
+        if(!correct){ $$(".opt-btn",grid).forEach(b=>{ if(b.textContent.trim()===q.correct) b.classList.add("correct"); }); }
+        $$(".opt-btn",grid).forEach(b=>b.disabled=true);
+        if(correct) correctCount++;
+        registerAnswer(correct, activeTeamId, correct?10:0);
+        flashFeedback(correct);
+        idx++;
+        setTimeout(()=>{ idx<pool.length ? renderQ() : showRoundSummary("Map Challenge", correctCount, pool.length); },700);
+      }}, state));
+    });
+    card.appendChild(grid);
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Crop Detective (progressive clues) ---------------- */
+function runCropDetective(){
+  const mount = $("#game-mount");
+  let pool = shuffleArray(CLUE_BANK);
+  let idx=0, correctCount=0;
+  sessionStreak=0;
+  function renderQ(){
+    let revealed=1, answered=false;
+    function draw(){
+      mount.innerHTML="";
+      const q = pool[idx];
+      mount.appendChild(el("div",{class:"eyebrow mono"},`CROP DETECTIVE — Case ${idx+1}/${pool.length}`));
+      const card = el("div",{class:"panel qcard"});
+      for(let i=0;i<revealed;i++){
+        card.appendChild(el("p",{style:"margin-bottom:.6rem;font-style:italic;color:var(--ink)"}, `🔍 Clue ${i+1}: ${q.clues[i]}`));
+      }
+      const pts = revealed===1?15:revealed===2?10:5;
+      card.appendChild(el("p",{class:"mono",style:"color:var(--orange);margin:.5rem 0 1rem"},`Worth ${pts} points if you solve it now`));
+      const row = el("div",{class:"fill-wrap"});
+      const input = el("input",{class:"field",type:"text",placeholder:"Which crop am I?",autocomplete:"off"});
+      const submit=()=>{
+        if(answered) return; answered=true;
+        const correct = input.value.trim().toLowerCase()===q.name.toLowerCase();
+        input.style.borderColor = correct?"var(--green)":"var(--danger)";
+        if(!correct) toast("It was: "+q.name);
+        if(correct) correctCount++;
+        registerAnswer(correct, activeTeamId, correct?pts:0);
+        flashFeedback(correct);
+        idx++;
+        setTimeout(()=>{ idx<pool.length ? renderQ() : showRoundSummary("Crop Detective", correctCount, pool.length); },900);
+      };
+      input.addEventListener("keydown",(e)=>{if(e.key==="Enter") submit();});
+      row.appendChild(input);
+      row.appendChild(el("button",{class:"btn primary",onclick:submit},"Accuse"));
+      card.appendChild(row);
+      if(revealed<q.clues.length){
+        card.appendChild(el("button",{class:"btn ghost sm",style:"margin-top:1rem",onclick:()=>{ revealed++; draw(); }},"🔍 Reveal Next Clue (-points)"));
+      }
+      mount.appendChild(card);
+    }
+    draw();
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Spin the Wheel ---------------- */
+function runSpinWheel(){
+  const mount = $("#game-mount");
+  const cats = Array.from(new Set(MCQ_BANK.map(q=>q.cat)));
+  mount.innerHTML="";
+  mount.appendChild(el("div",{class:"eyebrow mono"},"SPIN THE WHEEL — RANDOM CATEGORY"));
+  const card = el("div",{class:"panel qcard"});
+  const wheel = el("div",{id:"wheel-disc",style:`
+    width:min(70vw,260px);height:min(70vw,260px);border-radius:50%;margin:1rem auto;
+    background:conic-gradient(${cats.map((c,i)=>`${i%2?"var(--blue)":"var(--green)"} ${i*360/cats.length}deg ${(i+1)*360/cats.length}deg`).join(",")});
+    border:4px solid var(--orange); transition:transform 4s cubic-bezier(.17,.67,.32,1.02);
+    box-shadow:0 0 30px rgba(255,138,30,.4);
+  `});
+  card.appendChild(wheel);
+  const resultText = el("div",{class:"qtext",id:"wheel-result"}, "Spin to select a mission category!");
+  card.appendChild(resultText);
+  const spinBtn = el("button",{class:"btn primary",onclick:()=>{
+    spinBtn.disabled = true;
+    const chosenIdx = Math.floor(Math.random()*cats.length);
+    const segDeg = 360/cats.length;
+    const targetDeg = 360*5 + (360 - (chosenIdx*segDeg + segDeg/2));
+    wheel.style.transform = `rotate(${targetDeg}deg)`;
+    Audio_.click();
+    setTimeout(()=>{
+      const category = cats[chosenIdx];
+      resultText.textContent = `🎯 Category selected: ${category}`;
+      card.appendChild(el("button",{class:"btn orange",style:"margin-top:1rem",onclick:()=>runCategoryQuiz(category)}, "▶ Start "+category+" Quiz"));
+    },4100);
+  }}, "🎡 SPIN");
+  card.appendChild(spinBtn);
+  mount.appendChild(card);
+}
+function runCategoryQuiz(category){
+  const mount = $("#game-mount");
+  let pool = pickN(allMcq().filter(q=>q.cat===category),5).map(q=>({...q,qtype:"mcq"}));
+  if(!pool.length){ toast("Not enough questions in this category yet"); return; }
+  let idx=0, correctCount=0;
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    const q = pool[idx];
+    mount.appendChild(el("div",{class:"eyebrow mono"},`${category.toUpperCase()} — Q${idx+1}/${pool.length}`));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    card.appendChild(renderAnswerArea(q,(correct)=>{
+      if(correct) correctCount++;
+      registerAnswer(correct, activeTeamId, correct?10:0);
+      flashFeedback(correct);
+      idx++;
+      setTimeout(()=>{ idx<pool.length ? renderQ() : showRoundSummary("Spin the Wheel: "+category, correctCount, pool.length); },650);
+    }));
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Harvest Hunt ---------------- */
+function runHarvestHunt(){
+  const mount = $("#game-mount");
+  const targetCount = 8;
+  let pool = shuffleArray(allMcq()).map(q=>({...q,qtype:"mcq"}));
+  let idx=0, basket=[];
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    const q = pool[idx];
+    mount.appendChild(el("div",{class:"eyebrow mono"},`HARVEST HUNT — Basket: ${basket.length}/${targetCount}`));
+    mount.appendChild(el("div",{style:"font-size:2rem;text-align:center;margin-bottom:1rem;letter-spacing:.3em;"}, basket.join(" ")||"🧺 empty basket"));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    card.appendChild(renderAnswerArea(q,(correct)=>{
+      registerAnswer(correct, activeTeamId, correct?10:0);
+      flashFeedback(correct);
+      if(correct){ basket.push(CROP_BANK[Math.floor(Math.random()*CROP_BANK.length)].emoji); }
+      idx++;
+      setTimeout(()=>{
+        if(basket.length>=targetCount || idx>=pool.length){ showRoundSummary("Harvest Hunt", basket.length, targetCount); }
+        else renderQ();
+      },650);
+    }));
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Survival Mode ---------------- */
+function runSurvival(){
+  const mount = $("#game-mount");
+  let pool = shuffleArray([
+    ...allMcq().map(q=>({...q,qtype:"mcq"})),
+    ...TF_BANK.map(q=>({...q,qtype:"tf"})),
+    ...FILL_BANK.map(q=>({...q,qtype:"fill"}))
+  ]);
+  let idx=0, survived=0;
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    if(idx>=pool.length) idx=0;
+    const q = pool[idx];
+    mount.appendChild(el("div",{class:"turn-banner"},`💀 SURVIVAL MODE — ${survived} SURVIVED — ONE MISTAKE ENDS THE RUN`));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    card.appendChild(renderAnswerArea(q,(correct)=>{
+      registerAnswer(correct, activeTeamId, correct?10:0);
+      flashFeedback(correct);
+      if(correct){
+        survived++; idx++;
+        setTimeout(renderQ,600);
+      }else{
+        setTimeout(()=>showRoundSummary("Survival Mode", survived, survived+1),700);
+      }
+    }));
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- MODE: Final Boss Round ---------------- */
+function runFinalBoss(){
+  const mount = $("#game-mount");
+  let hardPool = shuffleArray([
+    ...MCQ_BANK.filter(q=>q.d==="hard").map(q=>({...q,qtype:"mcq"})),
+    ...TF_BANK.filter(q=>q.d==="hard").map(q=>({...q,qtype:"tf"})),
+    ...FILL_BANK.filter(q=>q.d==="hard").map(q=>({...q,qtype:"fill"}))
+  ]);
+  let idx=0, survived=0;
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    if(idx>=hardPool.length){ setTimeout(()=>{ logLeaderboard("Final Boss Round"); showEndScreen(); },400); return; }
+    const q = hardPool[idx];
+    mount.appendChild(el("div",{class:"turn-banner",style:"border-color:var(--danger);color:var(--danger);background:rgba(255,45,85,.1)"},`👑 FINAL BOSS ROUND — HARD ONLY · DOUBLE POINTS · ONE LIFE`));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    card.appendChild(renderAnswerArea(q,(correct)=>{
+      registerAnswer(correct, activeTeamId, correct?20:0);
+      flashFeedback(correct);
+      if(correct){ survived++; idx++; setTimeout(renderQ,650); }
+      else{ setTimeout(()=>{ logLeaderboard("Final Boss Round"); showEndScreen(); },700); }
+    }));
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- Round summary (non-battle modes) ---------------- */
+function showRoundSummary(modeName, correct, total){
+  const mount = $("#game-mount");
+  mount.innerHTML="";
+  const acc = total? Math.round((correct/total)*100):0;
+  mount.appendChild(el("div",{class:"panel qcard"},[
+    el("h2",{style:"color:var(--green);margin-bottom:1rem"},"MISSION COMPLETE"),
+    el("p",{class:"mono",style:"font-size:1.1rem;margin-bottom:.5rem"},`${modeName}`),
+    el("p",{class:"mono",style:"font-size:2rem;color:var(--blue)"},`${correct} / ${total} correct (${acc}%)`),
+    el("div",{class:"btn-row",style:"justify-content:center;margin-top:1.5rem"},[
+      el("button",{class:"btn primary",onclick:()=>showView("view-home")},"🏠 Return Home"),
+      el("button",{class:"btn orange",onclick:()=>showEndScreen()},"🏆 Declare Winner")
+    ])
+  ]));
+  logLeaderboard(modeName);
+}
+
+function logLeaderboard(modeName){
+  const top = [...STATE.teams].sort((a,b)=>b.score-a.score)[0];
+  STATE.leaderboard.unshift({mode:modeName, team:top?top.name:"—", score:top?top.score:0, date:new Date().toISOString()});
+  STATE.leaderboard = STATE.leaderboard.slice(0,25);
+  saveState();
+}
+
+/* ---------------- End / Winner screen ---------------- */
+function showEndScreen(){
+  Audio_.victory(); Audio_.stopMusic();
+  const sorted = [...STATE.teams].sort((a,b)=>b.score-a.score);
+  const winner = sorted[0];
+  $("#winner-name").textContent = winner ? `${winner.name} WINS!` : "No teams";
+  const board = $("#final-board");
+  board.innerHTML="";
+  sorted.forEach((t,i)=>{
+    board.appendChild(el("div",{class:"panel team-card"},[
+      el("div",{class:"team-colorbar",style:`background:${t.color}`}),
+      el("div",{class:"name"}, (i===0?"🥇 ":i===1?"🥈 ":i===2?"🥉 ":"")+t.name),
+      el("div",{class:"pts mono"}, String(t.score))
+    ]));
+  });
+  showView("view-end");
+  launchConfetti();
+}
+function playAgain(){ showView("view-home"); }
+
+/* ---------------- Confetti canvas ---------------- */
+function launchConfetti(){
+  const canvas = $("#confetti");
+  canvas.width = innerWidth; canvas.height = innerHeight;
+  const ctx = canvas.getContext("2d");
+  const colors = ["#00e5ff","#39ff88","#ff8a1e","#ff2d55","#ffe066"];
+  let pieces = Array.from({length:140},()=>({
+    x:Math.random()*canvas.width, y:-20-Math.random()*canvas.height,
+    r:4+Math.random()*6, c:colors[Math.floor(Math.random()*colors.length)],
+    vy:2+Math.random()*3, vx:-1.5+Math.random()*3, rot:Math.random()*360, vr:-6+Math.random()*12
+  }));
+  let frames=0;
+  function loop(){
+    frames++;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);
+      ctx.restore();
+    });
+    if(frames<260) requestAnimationFrame(loop);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  loop();
+}
+
+/* ---------------- Daily Challenge ---------------- */
+function startDailyChallenge(){
+  const seed = new Date().toISOString().slice(0,10).split("-").reduce((a,b)=>a+Number(b),0);
+  const pool = allMcq();
+  const shuffled = pool.slice().sort((a,b)=> ((a.id.charCodeAt(1)+seed)%7) - ((b.id.charCodeAt(1)+seed)%7));
+  window.__dailyPool = shuffled.slice(0,10);
+  activeTeamId = STATE.teams[0].id;
+  setTheme("mcq");
+  showView("view-game");
+  runDailyFromPool();
+}
+function runDailyFromPool(){
+  const mount = $("#game-mount");
+  let pool = window.__dailyPool.map(q=>({...q,qtype:"mcq"}));
+  let idx=0, correctCount=0;
+  sessionStreak=0;
+  function renderQ(){
+    mount.innerHTML="";
+    const q = pool[idx];
+    mount.appendChild(el("div",{class:"eyebrow mono"},`📅 DAILY CHALLENGE — Q${idx+1}/${pool.length}`));
+    const card = el("div",{class:"panel qcard"});
+    card.appendChild(questionMeta(q));
+    card.appendChild(renderQImage(q));
+    card.appendChild(el("div",{class:"qtext"}, q.q));
+    card.appendChild(renderAnswerArea(q,(correct)=>{
+      if(correct) correctCount++;
+      registerAnswer(correct, activeTeamId, correct?10:0);
+      flashFeedback(correct);
+      idx++;
+      setTimeout(()=>{ idx<pool.length?renderQ():showRoundSummary("Daily Challenge",correctCount,pool.length); },650);
+    }));
+    mount.appendChild(card);
+  }
+  renderQ();
+}
+
+/* ---------------- Leaderboard view ---------------- */
+function renderLeaderboard(){
+  const box = $("#leaderboard-list");
+  box.innerHTML="";
+  if(!STATE.leaderboard.length){ box.appendChild(el("p",{style:"color:var(--muted)"},"No completed missions yet. Finish a game mode to appear here.")); return; }
+  STATE.leaderboard.forEach(entry=>{
+    box.appendChild(el("div",{class:"panel flex-between",style:"margin-bottom:.6rem;padding:.9rem 1.2rem"},[
+      el("div",{},[el("strong",{},entry.team), el("div",{style:"color:var(--muted);font-size:.78rem"},entry.mode+" · "+new Date(entry.date).toLocaleString())]),
+      el("div",{class:"mono",style:"color:var(--green);font-size:1.2rem"}, String(entry.score))
+    ]));
+  });
+}
+
+/* ---------------- Teacher / Admin Panel ---------------- */
+const TEACHER_PASSWORD = "teacher123";
+function tryTeacherLogin(){
+  const pass = $("#teacher-pass").value;
+  if(pass===TEACHER_PASSWORD){
+    $("#teacher-login").classList.add("hidden");
+    $("#teacher-panel").classList.remove("hidden");
+    renderTeacherQuestions();
+    toast("Teacher access granted");
+  }else{
+    toast("Incorrect password");
+  }
+}
+function renderTeacherQuestions(){
+  const box = $("#teacher-question-list");
+  box.innerHTML="";
+  if(!STATE.customQuestions.length){ box.appendChild(el("p",{style:"color:var(--muted)"},"No custom questions added yet.")); return; }
+  STATE.customQuestions.forEach((q,i)=>{
+    box.appendChild(el("div",{class:"panel flex-between",style:"margin-bottom:.5rem;padding:.7rem 1rem"},[
+      el("div",{},q.q),
+      el("button",{class:"btn danger sm",onclick:()=>{STATE.customQuestions.splice(i,1);saveState();renderTeacherQuestions();}},"Delete")
+    ]));
+  });
+}
+let _tqImageData = null;
+function handleTqImageUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{ _tqImageData = reader.result; toast("Image attached to next question"); };
+  reader.readAsDataURL(file);
+}
+function addCustomQuestion(){
+  const q = $("#tq-question").value.trim();
+  const opts = [$("#tq-opt0").value.trim(),$("#tq-opt1").value.trim(),$("#tq-opt2").value.trim(),$("#tq-opt3").value.trim()];
+  const correctIdx = Number($("#tq-correct").value);
+  const difficulty = $("#tq-difficulty").value;
+  const category = $("#tq-category").value.trim() || "Teacher Added";
+  if(!q || opts.some(o=>!o)){ toast("Fill in the question and all four options"); return; }
+  STATE.customQuestions.push({id:"custom"+Date.now(),d:difficulty,cat:category,q,opts,a:correctIdx,exp:"Added by teacher.",img:_tqImageData||null});
+  _tqImageData = null;
+  saveState(); renderTeacherQuestions();
+  ["tq-question","tq-opt0","tq-opt1","tq-opt2","tq-opt3","tq-category"].forEach(id=>$("#"+id).value="");
+  $("#tq-image").value="";
+  toast("Question added to the bank");
+}
+function exportResultsCSV(){
+  let rows = [["Team","Score","Correct","Wrong","Accuracy"]];
+  STATE.teams.forEach(t=>{
+    const total=t.correct+t.wrong; const acc = total?Math.round(t.correct/total*100):0;
+    rows.push([t.name,t.score,t.correct,t.wrong,acc+"%"]);
+  });
+  rows.push([]); rows.push(["Mode","Winning Team","Score","Date"]);
+  STATE.leaderboard.forEach(l=>rows.push([l.mode,l.team,l.score,l.date]));
+  const csv = rows.map(r=>r.join(",")).join("\n");
+  const blob = new Blob([csv],{type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "agri-ops-results.csv";
+  a.click();
+  toast("CSV downloaded — opens directly in Excel");
+}
+function exportResultsPDF(){
+  if(window.jspdf && window.jspdf.jsPDF){
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(16); doc.text("AGRI-OPS Field Command — Mission Results",10,15);
+    doc.setFontSize(11);
+    let y=28;
+    doc.text("Team Standings:",10,y); y+=8;
+    [...STATE.teams].sort((a,b)=>b.score-a.score).forEach((t,i)=>{
+      const total=t.correct+t.wrong; const acc=total?Math.round(t.correct/total*100):0;
+      doc.text(`${i+1}. ${t.name} — Score ${t.score} | Correct ${t.correct} | Wrong ${t.wrong} | Accuracy ${acc}%`,10,y);
+      y+=7;
+    });
+    y+=6;
+    doc.text("Recent Missions:",10,y); y+=8;
+    STATE.leaderboard.slice(0,18).forEach(l=>{
+      if(y>280){ doc.addPage(); y=15; }
+      doc.text(`${l.mode} — Winner: ${l.team} (${l.score} pts) — ${new Date(l.date).toLocaleDateString()}`,10,y);
+      y+=7;
+    });
+    doc.save("agri-ops-results.pdf");
+    toast("PDF downloaded");
+  }else{
+    toast("PDF library unavailable offline — opening browser Print instead");
+    window.print();
+  }
+}
+function exportResultsXLSX(){
+  if(window.XLSX){
+    const teamRows = STATE.teams.map(t=>{
+      const total=t.correct+t.wrong; const acc=total?Math.round(t.correct/total*100):0;
+      return {Team:t.name,Score:t.score,Correct:t.correct,Wrong:t.wrong,"Accuracy %":acc};
+    });
+    const lbRows = STATE.leaderboard.map(l=>({Mode:l.mode,Winner:l.team,Score:l.score,Date:l.date}));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(teamRows), "Team Standings");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lbRows), "Leaderboard");
+    XLSX.writeFile(wb, "agri-ops-results.xlsx");
+    toast("Excel file downloaded");
+  }else{
+    toast("Excel library unavailable offline — downloading CSV instead");
+    exportResultsCSV();
+  }
+}
+
+/* ---------------- Fullscreen / Mute / Contrast ---------------- */
+function toggleFullscreen(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>toast("Fullscreen not available"));
+  else document.exitFullscreen();
+}
+function toggleMute(){
+  STATE.settings.muted = !STATE.settings.muted;
+  $("#mute-icon").textContent = STATE.settings.muted ? "🔇" : "🔊";
+  if(STATE.settings.muted) Audio_.stopMusic(); else Audio_.startMusic();
+  saveState();
+}
+function toggleContrast(){
+  STATE.settings.highContrast = !STATE.settings.highContrast;
+  document.body.classList.toggle("high-contrast", STATE.settings.highContrast);
+  saveState();
+}
+function setLightMode(on){
+  STATE.settings.lightMode = on;
+  document.body.classList.toggle("light-mode", on);
+  saveState();
+}
+function setAnimations(on){
+  STATE.settings.animationsOn = on;
+  document.body.classList.toggle("no-anim", !on);
+  saveState();
+}
+
+/* ---------------- Settings view ---------------- */
+function initSettingsView(){
+  const s = STATE.settings;
+  $("#set-music-vol").value = Math.round(s.musicVolume*100);
+  $("#set-sfx-vol").value = Math.round(s.sfxVolume*100);
+  $("#set-theme").value = s.lightMode ? "light":"dark";
+  $("#set-animations").value = s.animationsOn ? "on":"off";
+  $("#set-difficulty").value = s.difficultyFilter;
+  $("#set-qcount").value = s.defaultQuestionCount;
+  $("#set-rapid-secs").value = s.rapidSeconds;
+  $("#set-battle-secs").value = s.battleSeconds;
+  $("#set-quiz-secs").value = s.quizSeconds;
+  $("#set-rounds").value = s.roundsPerTeam;
+
+  $("#set-music-vol").oninput = (e)=>{ s.musicVolume = Number(e.target.value)/100; saveState(); };
+  $("#set-sfx-vol").oninput = (e)=>{ s.sfxVolume = Number(e.target.value)/100; saveState(); Audio_.click(); };
+  $("#set-theme").onchange = (e)=> setLightMode(e.target.value==="light");
+  $("#set-animations").onchange = (e)=> setAnimations(e.target.value==="on");
+  $("#set-difficulty").onchange = (e)=>{ s.difficultyFilter = e.target.value; saveState(); toast("Difficulty filter set to "+e.target.value); };
+  $("#set-qcount").onchange = (e)=>{ s.defaultQuestionCount = Math.max(3,Math.min(30,Number(e.target.value)||10)); saveState(); };
+  $("#set-rapid-secs").onchange = (e)=>{ s.rapidSeconds = Math.max(30,Number(e.target.value)||180); saveState(); };
+  $("#set-battle-secs").onchange = (e)=>{ s.battleSeconds = Math.max(5,Number(e.target.value)||20); saveState(); };
+  $("#set-quiz-secs").onchange = (e)=>{ s.quizSeconds = Math.max(5,Number(e.target.value)||15); saveState(); };
+  $("#set-rounds").onchange = (e)=>{ s.roundsPerTeam = Math.max(1,Number(e.target.value)||5); saveState(); };
+  $("#set-music-toggle").checked = s.musicOn;
+  $("#set-music-toggle").onchange = (e)=>{ s.musicOn = e.target.checked; if(!s.musicOn) Audio_.stopMusic(); else Audio_.startMusic(); saveState(); };
+}
+
+/* ---------------- Title editing ---------------- */
+function initTitle(){
+  const h1 = $("#site-title");
+  h1.textContent = STATE.title;
+  h1.addEventListener("blur",()=>{
+    STATE.title = h1.textContent.trim() || DEFAULT_STATE.title;
+    h1.textContent = STATE.title;
+    saveState();
+  });
+  h1.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); h1.blur(); } });
+}
+
+/* ---------------- Init ---------------- */
+function init(){
+  document.body.classList.toggle("high-contrast", STATE.settings.highContrast);
+  document.body.classList.toggle("light-mode", STATE.settings.lightMode);
+  document.body.classList.toggle("no-anim", !STATE.settings.animationsOn);
+  $("#mute-icon").textContent = STATE.settings.muted ? "🔇" : "🔊";
+  initTitle();
+  renderMiniScoreboard();
+  renderModes();
+  renderTeams();
+  $("#add-team-btn").addEventListener("click",addTeam);
+  $("#new-team-name").addEventListener("keydown",(e)=>{if(e.key==="Enter")addTeam();});
+  $("#reset-scores-btn").addEventListener("click",resetAllScores);
+  $("#fullscreen-btn").addEventListener("click",toggleFullscreen);
+  $("#mute-btn").addEventListener("click",toggleMute);
+  $("#contrast-btn").addEventListener("click",toggleContrast);
+  $("#daily-btn").addEventListener("click",startDailyChallenge);
+  $("#leaderboard-btn").addEventListener("click",()=>{renderLeaderboard();showView("view-leaderboard");});
+  $("#teacher-btn").addEventListener("click",()=>showView("view-teacher"));
+  $("#settings-btn").addEventListener("click",()=>{initSettingsView();showView("view-settings");});
+  $("#teacher-login-btn").addEventListener("click",tryTeacherLogin);
+  $("#add-question-btn").addEventListener("click",addCustomQuestion);
+  $("#tq-image").addEventListener("change",handleTqImageUpload);
+  $("#export-csv-btn").addEventListener("click",exportResultsCSV);
+  $("#export-pdf-btn").addEventListener("click",exportResultsPDF);
+  $("#export-xlsx-btn").addEventListener("click",exportResultsXLSX);
+  $("#teacher-reset-btn").addEventListener("click",resetAllScores);
+  $("#mystery-close-btn").addEventListener("click",()=>$("#mystery-backdrop").classList.remove("show"));
+  $$(".nav-home").forEach(b=>b.addEventListener("click",()=>showView("view-home")));
+  $$(".nav-modes").forEach(b=>b.addEventListener("click",()=>{renderModes();showView("view-modes");}));
+  $$(".nav-teams").forEach(b=>b.addEventListener("click",()=>{renderTeams();showView("view-teams");}));
+  $("#play-again-btn").addEventListener("click",()=>{resetAllScores();showView("view-home");});
+  $("#end-return-home-btn").addEventListener("click",()=>showView("view-home"));
+  $("#start-game-btn").addEventListener("click",()=>{renderModes();showView("view-modes");Audio_.click();});
+
+  document.addEventListener("click",()=>{ if(!STATE.settings.muted) Audio_.startMusic(); },{once:true});
+
+  window.addEventListener("resize",()=>{ const c=$("#confetti"); if(c){c.width=innerWidth;c.height=innerHeight;} });
+
+  // Note: offline service-worker caching is intentionally omitted in this
+  // single-file build — a Service Worker must live at its own URL/file to
+  // register, which conflicts with the "single index.html, no extra files"
+  // requirement. See the closing chat message for details.
+
+  setTimeout(()=>{
+    $("#loader").style.opacity="0";
+    setTimeout(()=>$("#loader").remove(),500);
+  },1200);
+
+  showView("view-home");
+}
+document.addEventListener("DOMContentLoaded",init);
+
+</script>
+</body>
+</html>
